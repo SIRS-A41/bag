@@ -9,68 +9,67 @@ import com.google.gson.*;
 
 public class AuthRequests {
 
-    private static String HOSTNAME = "http://localhost:8000/auth";
-    private static String AUTHORIZATION = "Basic QzZFNTlCMjlBRDZEODRCMEU0RUJGQjAzNkRFNzVFMUQ6VjJaMnBBdEZhYUQ3THRVaHRHYkJOQTUraUtDajFmdysybSttNlhVaDdUWT0=";
+        private static String HOSTNAME = "http://localhost:8000/auth";
+        private static String AUTHORIZATION = "Basic QzZFNTlCMjlBRDZEODRCMEU0RUJGQjAzNkRFNzVFMUQ6VjJaMnBBdEZhYUQ3THRVaHRHYkJOQTUraUtDajFmdysybSttNlhVaDdUWT0=";
 
-    private static final HttpClient httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .connectTimeout(Duration.ofSeconds(10))
-            .build();
+        private static final HttpClient httpClient = HttpClient.newBuilder()
+                        .version(HttpClient.Version.HTTP_1_1)
+                        .connectTimeout(Duration.ofSeconds(10))
+                        .build();
 
-    public static HttpResponse<String> register(String email, String password)
-            throws IOException, InterruptedException {
-        JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
-        requestJson.addProperty("email", email);
-        requestJson.addProperty("password", password);
+        public static HttpResponse<String> register(String email, String password)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("email", email);
+                requestJson.addProperty("password", password);
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
-                .uri(URI.create(HOSTNAME + "/register"))
-                .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                .setHeader(
-                        "Authorization", AUTHORIZATION)
-                .build();
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/register"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader(
+                                                "Authorization", AUTHORIZATION)
+                                .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return response;
-    }
+                return response;
+        }
 
-    public static HttpResponse<String> login(String email, String password)
-            throws IOException, InterruptedException {
-        JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
-        requestJson.addProperty("email", email);
-        requestJson.addProperty("password", password);
+        public static HttpResponse<String> login(String email, String password)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("email", email);
+                requestJson.addProperty("password", password);
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
-                .uri(URI.create(HOSTNAME + "/login"))
-                .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                .setHeader(
-                        "Authorization", AUTHORIZATION)
-                .build();
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/login"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader(
+                                                "Authorization", AUTHORIZATION)
+                                .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return response;
-    }
+                return response;
+        }
 
-    public static HttpResponse<String> logout(String refreshToken)
-            throws IOException, InterruptedException {
-        JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
-        requestJson.addProperty("email", email);
-        requestJson.addProperty("password", password);
+        public static HttpResponse<String> logout(String refreshToken)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("refresh_token", refreshToken);
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
-                .uri(URI.create(HOSTNAME + "/login"))
-                .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                .setHeader(
-                        "Authorization", AUTHORIZATION)
-                .build();
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/login"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader(
+                                                "Authorization", AUTHORIZATION)
+                                .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return response;
-    }
+                return response;
+        }
 }

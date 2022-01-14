@@ -92,20 +92,13 @@ public class Auth {
         return;
     }
 
+    // todo: logout
     public static void logout() {
-        Console console = System.console();
-        if (console == null) {
-            System.out.println("Couldn't get Console instance");
-            System.exit(0);
-        }
-        final String email = console.readLine("Enter your email: ");
-
-        char[] passwordArray = console.readPassword("Enter your password: ");
-        final String password = new String(passwordArray);
+        final String refreshToken = "";
 
         HttpResponse<String> response;
         try {
-            response = AuthRequests.logout();
+            response = AuthRequests.logout(refreshToken);
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
