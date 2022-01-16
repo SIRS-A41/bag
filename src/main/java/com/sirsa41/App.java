@@ -1,14 +1,11 @@
 package com.sirsa41;
 
-import java.io.Console;
-
 /**
  * Hello world!
  *
  */
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello World!");
         if (args.length >= 1) {
             final String command = args[0];
             if (command.equals("register")) {
@@ -17,9 +14,23 @@ public class App {
                 Auth.login();
             } else if (command.equals("logout")) {
                 Auth.logout();
-            } else if(command.equals("create")) {
-                Resources.create();
+            } else if (command.equals("private")) {
+                final String keyPath = args[1];
+                Resources.setPrivateKey(keyPath);
+            } else if (command.equals("keys")) {
+                Resources.generateKeys();
+            } else if (command.equals("create")) {
+                final String projectName = args[1];
+                Resources.create(projectName);
             }
+        } else {
+            System.out.println("Instructions:");
+            System.out.println("bag register - Create an account");
+            System.out.println("bag login - Login to account");
+            System.out.println("bag logout - Logout of your account");
+            System.out.println("bag keys - Generate asymmetric key pair");
+            System.out.println("bag private - Set private key");
+            System.out.println("bag create <project-name> - Create a new project named <project-name>");
         }
     }
 }

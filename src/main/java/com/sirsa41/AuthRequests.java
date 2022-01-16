@@ -27,8 +27,7 @@ public class AuthRequests {
                                 .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
                                 .uri(URI.create(HOSTNAME + "/register"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                                .setHeader(
-                                                "Authorization", AUTHORIZATION)
+                                .setHeader("Authorization", AUTHORIZATION)
                                 .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -46,8 +45,7 @@ public class AuthRequests {
                                 .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
                                 .uri(URI.create(HOSTNAME + "/login"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                                .setHeader(
-                                                "Authorization", AUTHORIZATION)
+                                .setHeader("Authorization", AUTHORIZATION)
                                 .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -62,10 +60,26 @@ public class AuthRequests {
 
                 HttpRequest request = HttpRequest.newBuilder()
                                 .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
-                                .uri(URI.create(HOSTNAME + "/login"))
+                                .uri(URI.create(HOSTNAME + "/logout"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                                .setHeader(
-                                                "Authorization", AUTHORIZATION)
+                                .setHeader("Authorization", AUTHORIZATION)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
+
+        public static HttpResponse<String> accessToken(String refreshToken)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("refresh_token", refreshToken);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/accessToken"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", AUTHORIZATION)
                                 .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

@@ -16,21 +16,40 @@ public class ResourcesRequests {
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
-        public static HttpResponse<String> create(String projectName, String accessToken)
+        public static HttpResponse<String> create(String projectName)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
                 requestJson.addProperty("name", projectName);
+
+                final String accessToken = Config.getAccessToken();
 
                 HttpRequest request = HttpRequest.newBuilder()
                                 .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
                                 .uri(URI.create(HOSTNAME + "/create"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
-                                .setHeader(
-                                                "Authorization", "Bearer " + accessToken)
+                                .setHeader("Authorization", "Bearer " + accessToken)
                                 .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+                return response;
+        }
+
+        public static HttpResponse<String> setPublicKey(String publicKey)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("key", publicKey);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/setPublicKey"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
                 return response;
         }
 
