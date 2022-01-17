@@ -53,4 +53,40 @@ public class ResourcesRequests {
                 return response;
         }
 
+        public static HttpResponse<String> getPublicKey(String userId)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("user", userId);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/getPublicKey"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                return response;
+        }
+
+        public static HttpResponse<String> clone(String projectName)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("name", projectName);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/clone"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
 }

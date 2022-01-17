@@ -22,6 +22,11 @@ public class App {
             } else if (command.equals("create")) {
                 final String projectName = args[1];
                 Resources.create(projectName);
+            } else if (command.equals("clone")) {
+                final String projectName = args[1];
+                Resources.clone(projectName);
+            } else {
+                System.out.println(String.format("bag %s not implemented", command));
             }
         } else {
             System.out.println("Instructions:");

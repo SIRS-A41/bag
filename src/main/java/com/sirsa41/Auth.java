@@ -70,7 +70,7 @@ public class Auth {
             System.out.println("Couldn't get Console instance");
             System.exit(0);
         }
-        char[] passwordArray = console.readPassword("Enter your password: ");
+        char[] passwordArray = console.readPassword(instructions);
         return new String(passwordArray);
     }
 
@@ -88,11 +88,17 @@ public class Auth {
 
         final String email = getInput("Enter your email: ");
         final String password = getInputHidden("Enter your password: ");
-        actualLogin(email, password);
+        final boolean result = actualLogin(email, password);
+        if (result) {
+            final String key = Resources.getPublicKey(email);
+            if (key == null) {
+                Resources.generateKeys();
+            }
+        }
         return;
     }
 
-    private static void actualLogin(String email, String password) {
+    private static boolean actualLogin(String email, String password) {
 
         HttpResponse<String> response;
         try {
@@ -100,11 +106,11 @@ public class Auth {
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to login");
-            return;
+            return false;
         } catch (InterruptedException e) {
             e.printStackTrace();
             System.out.println("Failed to login");
-            return;
+            return false;
         }
 
         if (response.statusCode() == 200) {
@@ -133,11 +139,12 @@ public class Auth {
                 e.printStackTrace();
                 System.out.println("Failed to save refresh_token: " + refreshToken);
             }
+            return true;
         } else {
             System.out.println("Failed to login...");
             System.out.println(response.body());
         }
-        return;
+        return false;
     }
 
     // todo: logout

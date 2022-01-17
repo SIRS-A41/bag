@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -19,8 +20,80 @@ public class Config {
     private static final String PRIVATE_KEY_PATH = CONFIG_PATH + "private_key";
 
     private static void createConfigFolder() throws Exception {
-        // Instantiate the File class
-        File f1 = new File(CONFIG_PATH);
+        createFolder(CONFIG_PATH);
+    }
+
+    public static boolean createProjectFolder(String name) throws Exception {
+        if (!projectFolderExists(name)) {
+            createFolder(projectFolderPath(name));
+            return true;
+        }
+        return false;
+    }
+
+    public static void createProjectConfigFolder(String projectName) throws Exception {
+        if (!projectConfigFolderExists()) {
+            createFolder(projectConfigFolderPath(projectName));
+        }
+    }
+
+    private static String projectFolderPath(String name) {
+        final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
+        return Paths.get(cwd, name).toString();
+    }
+
+    private static String projectConfigFolderPath(String projectName) {
+        final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
+        if (projectName != null) {
+            final String path = Paths.get(projectFolderPath(projectName), ".bag").toString();
+            return path;
+        } else {
+            return Paths.get(cwd, "/.bag").toString();
+        }
+    }
+
+    public static boolean projectFolderExists(String name) {
+        final File f = new File(projectFolderPath(name));
+        return f.exists();
+    }
+
+    public static boolean projectConfigFolderExists() {
+        final File f = new File(projectConfigFolderPath(null));
+        return f.exists();
+    }
+
+    public static void storeProjectId(String id, String projectName) {
+        try {
+            writeToFile(id, Paths.get(projectConfigFolderPath(projectName), "project_id").toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    public static boolean setCurrentDirectory(String directory_name) {
+        boolean result = false; // Boolean indicating whether directory was set
+        File directory; // Desired current working directory
+
+        directory = new File(directory_name).getAbsoluteFile();
+        if (directory.exists() || directory.mkdirs()) {
+            result = (System.setProperty("user.dir", directory.getAbsolutePath()) != null);
+        }
+
+        return result;
+    }
+
+    public static void storeProjectKey(String key, String projectName) {
+        try {
+            writeToFile(key, Paths.get(projectConfigFolderPath(projectName), "key").toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    private static void createFolder(String path) throws Exception {
+        File f1 = new File(path);
         // Creating a folder using mkdir() method
         boolean folderCreated = f1.mkdirs();
         if (!folderCreated) {
