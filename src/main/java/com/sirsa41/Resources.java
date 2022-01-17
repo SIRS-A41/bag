@@ -28,7 +28,7 @@ public class Resources {
             return;
         }
 
-        if (Config.getPublicKey() != null) {
+        if (Config.getPrivateKey() != null) {
             System.out.println("User already has keys");
             return;
         }
@@ -74,6 +74,11 @@ public class Resources {
             return;
         }
 
+        if (Config.getPrivateKey() == null) {
+            System.out.println("Generate an asymmetric key pair or set your private key first");
+            return;
+        }
+
         System.out.println(String.format("Creating project: %s", projectName));
 
         HttpResponse<String> response;
@@ -90,6 +95,7 @@ public class Resources {
         }
 
         if (response.statusCode() == 200) {
+            System.out.println(response.body());
             System.out.println("Project successfuly created");
         } else {
             System.out.println("Failed to create a project");
