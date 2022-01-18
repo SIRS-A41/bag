@@ -1,5 +1,6 @@
 package com.sirsa41;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -8,8 +9,10 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 import javax.crypto.BadPaddingException;
@@ -43,7 +46,7 @@ public class Encryption {
         return Base64.getEncoder().encodeToString(encodedPublicKey);
     }
 
-    private static PrivateKey stringToKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private static PrivateKey stringToPrivateKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] encoded = Base64.getDecoder().decode(key);
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(encoded);
         KeyFactory keyFacPriv = KeyFactory.getInstance("RSA");
@@ -51,11 +54,19 @@ public class Encryption {
         return priv;
     }
 
+    private static PublicKey stringToPublicKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] encoded = Base64.getDecoder().decode(key);
+        X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(encoded);
+        KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
+        PublicKey pub = keyFacPub.generatePublic(pubSpec);
+        return pub;
+    }
+
     public static String decrypt(String encryptedText) {
         final String key = Config.getPrivateKey();
         PrivateKey privateKey;
         try {
-            privateKey = stringToKey(key);
+            privateKey = stringToPrivateKey(key);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
             return null;
@@ -95,7 +106,53 @@ public class Encryption {
         }
     }
 
-    public static void main(String[] args) {
-        decrypt("VwG0YJQO6QyY6++B4wShPFA+jMSkwHlmFNmbtViqTnYm3crxZ+SFPeSPSNgC1t0Axyqn0PZF2P6pXUMdusWnqfnZOk7UaC6Hwu8nBLc6GIBUDmRGFW5jxUwDKbSmBztJA3iYyJOVOXcR4VyDRykubG/gBgDDbte/XqJUGY6nSTrJHGSgLqpOGKZnx3oftV+ptE5t051w4J3dRhHhIHNZivJnOC+Ri4UbACAbcFmCSYvOMLzcKtUZnamp62mEBW3paAxw0yaYQ+VfG/v6vvlyg+pvSprmwEouZ3CUXxGwUUti5wITNCe1rQTUXSiCmMWXn95x7a38q9WjpVILlDlTcw==");
+    public static String encrypt(String plaintext, String key) {
+        PublicKey publicKey;
+        try {
+            publicKey = stringToPublicKey(key);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        } catch (InvalidKeySpecException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        Cipher encrypt;
+        try {
+            encrypt = Cipher.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e1) {
+            e1.printStackTrace();
+            return null;
+        } catch (NoSuchPaddingException e1) {
+            e1.printStackTrace();
+            return null;
+        }
+        try {
+            encrypt.init(Cipher.ENCRYPT_MODE, publicKey);
+        } catch (InvalidKeyException e1) {
+            e1.printStackTrace();
+            return null;
+        }
+
+        byte[] encryptedBytes;
+        try {
+            encryptedBytes = plaintext.getBytes("UTF8");
+        } catch (UnsupportedEncodingException e1) {
+            e1.printStackTrace();
+            return null;
+        }
+        try {
+            final String cipher = new String(Base64.getEncoder().encode(encrypt.doFinal(encryptedBytes)),
+                    StandardCharsets.UTF_8);
+            return cipher;
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+            return null;
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
+
 }

@@ -9,14 +9,14 @@ import com.google.gson.*;
 public class Auth {
 
     public static void register() {
-        final String email = getInput("Enter your email: ");
+        final String username = getInput("Enter your username: ");
         final String password = createPassword();
 
-        System.out.println(String.format("Creating an account for user: %s...", email));
+        System.out.println(String.format("Creating an account for user: %s...", username));
 
         HttpResponse<String> response;
         try {
-            response = AuthRequests.register(email, password);
+            response = AuthRequests.register(username, password);
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to create an account");
@@ -86,11 +86,11 @@ public class Auth {
             return;
         }
 
-        final String email = getInput("Enter your email: ");
+        final String username = getInput("Enter your username: ");
         final String password = getInputHidden("Enter your password: ");
-        final boolean result = actualLogin(email, password);
+        final boolean result = actualLogin(username, password);
         if (result) {
-            final String key = Resources.getPublicKey(email);
+            final String key = Resources.getPublicKey(username);
             if (key == null) {
                 Resources.generateKeys();
             }
@@ -98,11 +98,11 @@ public class Auth {
         return;
     }
 
-    private static boolean actualLogin(String email, String password) {
+    private static boolean actualLogin(String username, String password) {
 
         HttpResponse<String> response;
         try {
-            response = AuthRequests.login(email, password);
+            response = AuthRequests.login(username, password);
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to login");
@@ -117,10 +117,10 @@ public class Auth {
             System.out.println("Login successful");
 
             try {
-                Config.setUser(email);
+                Config.setUser(username);
             } catch (Exception e1) {
                 e1.printStackTrace();
-                System.out.println("Failed to save user: " + email);
+                System.out.println("Failed to save user: " + username);
             }
 
             final String bodyRaw = response.body();

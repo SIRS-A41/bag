@@ -89,4 +89,25 @@ public class ResourcesRequests {
 
                 return response;
         }
+
+        public static HttpResponse<String> share(String projectId, String userId, String encryptedKey)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("project", projectId);
+                requestJson.addProperty("user", userId);
+                requestJson.addProperty("key", encryptedKey);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/share"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
 }

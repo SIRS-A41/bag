@@ -116,7 +116,7 @@ public class Resources {
             return;
         }
 
-        if (Config.projectConfigFolderExists()) {
+        if (Config.projectConfigFolderExists(null)) {
             System.out.println("Project already created");
             return;
         }
@@ -186,15 +186,21 @@ public class Resources {
         }
 
         if (response.statusCode() == 200) {
+            String folderName;
+            if (projectName.contains("/")) {
+                folderName = projectName.split("/", 2)[1];
+            } else {
+                folderName = projectName;
+            }
             boolean result;
             try {
-                result = Config.createProjectFolder(projectName);
+                result = Config.createProjectFolder(folderName);
             } catch (Exception e1) {
                 e1.printStackTrace();
                 return;
             }
             if (!result) {
-                System.out.println(String.format("Folder named %s already exists", projectName));
+                System.out.println(String.format("Folder named %s already exists", folderName));
                 return;
             }
 
@@ -205,18 +211,69 @@ public class Resources {
             final String encryptedKey = body.get("key").getAsString();
             final String key = Encryption.decrypt(encryptedKey);
 
-            Config.setCurrentDirectory(String.format("./%s", projectName));
             try {
-                Config.createProjectConfigFolder(projectName);
-                Config.storeProjectId(projectId, projectName);
-                Config.storeProjectKey(key, projectName);
+                Config.createProjectConfigFolder(folderName);
+                Config.storeProjectId(projectId, folderName);
+                Config.storeProjectKey(key, folderName);
             } catch (Exception e) {
                 System.out.println("Failed to create project config folder");
             }
-            Config.setCurrentDirectory("./..");
-            System.out.println(String.format("%s successfuly cloned", projectName));
+            System.out.println(String.format("Project %s successfuly cloned", projectName));
         } else {
             System.out.println("Failed to clone project");
+            System.out.println(response.body());
+        }
+        return;
+    }
+
+    public static void share(String userId) {
+
+        if (!Auth.isLoggedIn()) {
+            System.out.println("You are not logged in. Login first");
+            return;
+        }
+
+        if (Config.getPrivateKey() == null) {
+            System.out.println("Generate an asymmetric key pair or set your private key first");
+            return;
+        }
+
+        if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
+            System.out.println("You are not inside a valid project folder");
+            return;
+        }
+
+        final String projectId = Config.getProjectId();
+        final String key = Config.getProjectKey();
+
+        final String userKey = Resources.getPublicKey(userId);
+        if (userKey == null) {
+            System.out.println(String.format("Failed to retrieve public key from %s", userId));
+            return;
+        }
+        final String encryptedKey = Encryption.encrypt(key, userKey);
+        if (encryptedKey == null) {
+            System.out.println(String.format("Failed to encrypt project key for %s", userId));
+            return;
+        }
+
+        HttpResponse<String> response;
+        try {
+            response = makeRequest(() -> ResourcesRequests.share(projectId, userId, encryptedKey));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to create a project");
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Failed to create a project");
+            return;
+        }
+
+        if (response.statusCode() == 200) {
+            System.out.println(String.format("Project successfuly shared with %s", userId));
+        } else {
+            System.out.println("Failed to create a project");
             System.out.println(response.body());
         }
         return;

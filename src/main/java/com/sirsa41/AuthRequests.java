@@ -17,10 +17,10 @@ public class AuthRequests {
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
-        public static HttpResponse<String> register(String email, String password)
+        public static HttpResponse<String> register(String username, String password)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
-                requestJson.addProperty("email", email);
+                requestJson.addProperty("username", username);
                 requestJson.addProperty("password", password);
 
                 HttpRequest request = HttpRequest.newBuilder()
@@ -35,10 +35,10 @@ public class AuthRequests {
                 return response;
         }
 
-        public static HttpResponse<String> login(String email, String password)
+        public static HttpResponse<String> login(String username, String password)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
-                requestJson.addProperty("email", email);
+                requestJson.addProperty("username", username);
                 requestJson.addProperty("password", password);
 
                 HttpRequest request = HttpRequest.newBuilder()

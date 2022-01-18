@@ -32,7 +32,7 @@ public class Config {
     }
 
     public static void createProjectConfigFolder(String projectName) throws Exception {
-        if (!projectConfigFolderExists()) {
+        if (!projectConfigFolderExists(projectName)) {
             createFolder(projectConfigFolderPath(projectName));
         }
     }
@@ -57,9 +57,39 @@ public class Config {
         return f.exists();
     }
 
-    public static boolean projectConfigFolderExists() {
-        final File f = new File(projectConfigFolderPath(null));
+    public static boolean projectConfigFolderExists(String name) {
+        final File f = new File(projectConfigFolderPath(name));
         return f.exists();
+    }
+
+    public static boolean validProjectConfig() {
+        File f = new File(Paths.get(projectConfigFolderPath(null), "key").toString());
+        if (!f.exists())
+            return false;
+
+        f = new File(Paths.get(projectConfigFolderPath(null), "project_id").toString());
+        if (!f.exists())
+            return false;
+
+        return true;
+    }
+
+    public static String getProjectId() {
+        final String path = Paths.get(projectConfigFolderPath(null), "project_id").toString();
+        if (fileExists(path)) {
+            return readFile(path);
+        } else {
+            return null;
+        }
+    }
+
+    public static String getProjectKey() {
+        final String path = Paths.get(projectConfigFolderPath(null), "key").toString();
+        if (fileExists(path)) {
+            return readFile(path);
+        } else {
+            return null;
+        }
     }
 
     public static void storeProjectId(String id, String projectName) {

@@ -25,6 +25,9 @@ public class App {
             } else if (command.equals("clone")) {
                 final String projectName = args[1];
                 Resources.clone(projectName);
+            } else if (command.equals("share")) {
+                final String user = args[1];
+                Resources.share(user);
             } else {
                 System.out.println(String.format("bag %s not implemented", command));
             }
