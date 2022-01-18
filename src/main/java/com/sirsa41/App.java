@@ -12,6 +12,8 @@ public class App {
                 Auth.register();
             } else if (command.equals("login")) {
                 Auth.login();
+            } else if (command.equals("user")) {
+                Auth.user();
             } else if (command.equals("logout")) {
                 Auth.logout();
             } else if (command.equals("private")) {

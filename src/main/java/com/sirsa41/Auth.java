@@ -147,7 +147,6 @@ public class Auth {
         return false;
     }
 
-    // todo: logout
     public static void logout() {
         if (!isLoggedIn()) {
             System.out.println("You are not logged in");
@@ -176,6 +175,22 @@ public class Auth {
             System.out.println("Failed to logout...");
             System.out.println(response.body());
         }
+        return;
+    }
+
+    public static void user() {
+        if (!isLoggedIn()) {
+            System.out.println("You are not logged in");
+            return;
+        }
+
+        final String user = Config.getUser();
+
+        if (user == null) {
+            System.out.println("Something is wrong in your config files");
+        }
+
+        System.out.println(user);
         return;
     }
 
