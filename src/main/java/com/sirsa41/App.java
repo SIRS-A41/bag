@@ -37,10 +37,13 @@ public class App {
             System.out.println("Instructions:");
             System.out.println("bag register - Create an account");
             System.out.println("bag login - Login to account");
+            System.out.println("bag user - Get current user");
             System.out.println("bag logout - Logout of your account");
             System.out.println("bag keys - Generate asymmetric key pair");
             System.out.println("bag private - Set private key");
             System.out.println("bag create <project-name> - Create a new project named <project-name>");
+            System.out.println("bag clone <project-name> - Clone project named <project-name>");
+            System.out.println("bag share <username> - Share project with <username>");
         }
     }
 }
