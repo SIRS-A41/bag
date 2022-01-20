@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -19,6 +20,9 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 public class Encryption {
 
@@ -155,4 +159,12 @@ public class Encryption {
         }
     }
 
+    static public String deriveKey(String password, String salt, int keyLen)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+        KeySpec specs = new PBEKeySpec(password.toCharArray(), salt.getBytes(), 2048, keyLen);
+        SecretKey key = kf.generateSecret(specs);
+        final byte[] encoded = key.getEncoded();
+        return Base64.getEncoder().encodeToString(encoded);
+    }
 }

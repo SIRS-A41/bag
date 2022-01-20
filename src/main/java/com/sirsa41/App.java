@@ -1,5 +1,8 @@
 package com.sirsa41;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
 /**
  * Hello world!
  *
@@ -17,17 +20,33 @@ public class App {
             } else if (command.equals("logout")) {
                 Auth.logout();
             } else if (command.equals("private")) {
+                if (args.length < 2) {
+                    System.out.println("Provide path to private_key");
+                    return;
+                }
                 final String keyPath = args[1];
                 Resources.setPrivateKey(keyPath);
             } else if (command.equals("keys")) {
                 Resources.generateKeys();
             } else if (command.equals("create")) {
+                if (args.length < 2) {
+                    System.out.println("Provide project name");
+                    return;
+                }
                 final String projectName = args[1];
                 Resources.create(projectName);
             } else if (command.equals("clone")) {
+                if (args.length < 2) {
+                    System.out.println("Provide project reference");
+                    return;
+                }
                 final String projectName = args[1];
                 Resources.clone(projectName);
             } else if (command.equals("share")) {
+                if (args.length < 2) {
+                    System.out.println("Provide username to share with");
+                    return;
+                }
                 final String user = args[1];
                 Resources.share(user);
             } else {

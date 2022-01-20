@@ -3,14 +3,29 @@ package com.sirsa41;
 import java.io.Console;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 import com.google.gson.*;
 
 public class Auth {
 
     public static void register() {
+
+        if (isLoggedIn()) {
+            final String user = Config.getUser();
+            System.out.println("You are already logged in as " + user);
+            return;
+        }
+
         final String username = getInput("Enter your username: ");
-        final String password = createPassword();
+        String password = createPassword();
+        try {
+            password = Encryption.deriveKey(password, username, 128);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            System.out.println("Failed to secure password");
+            return;
+        }
 
         System.out.println(String.format("Creating an account for user: %s...", username));
 
@@ -87,7 +102,13 @@ public class Auth {
         }
 
         final String username = getInput("Enter your username: ");
-        final String password = getInputHidden("Enter your password: ");
+        String password = getInputHidden("Enter your password: ");
+        try {
+            password = Encryption.deriveKey(password, username, 128);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            System.out.println("Failed to secure password");
+            return;
+        }
         final boolean result = actualLogin(username, password);
         if (result) {
             final String key = Resources.getPublicKey(username);

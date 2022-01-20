@@ -20,6 +20,7 @@ public class Resources {
         }
 
         Config.setPrivateKeyFromFile(filepath);
+        System.out.println(String.format("Private key loaded from %s", filepath));
 
         return;
     }
