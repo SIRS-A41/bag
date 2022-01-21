@@ -302,6 +302,10 @@ public class Resources {
         final String key = Config.getProjectKey();
 
         final File compressed = compressProject();
+        if (compressed == null) {
+            System.out.println("Failed to compress project");
+            return;
+        }
         final String iv = Encryption.generateIv();
         final File encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
         final String signature = "";
@@ -321,6 +325,9 @@ public class Resources {
 
         if (response.statusCode() == 200) {
             // todo
+            System.out.println("success");
+            compressed.delete();
+            encrypted.delete();
         } else {
             System.out.println("Failed to push project files");
             System.out.println(response.body());
@@ -341,8 +348,10 @@ public class Resources {
 
     static private File compressProject() {
         final ArrayList<String> files = ls(".");
+        final String filepath = ".bag/compress_tmp.tar.gz";
         try {
-            FilesUtils.compressTarGz(files, ".bag/compress_tmp.tar.gz");
+            FilesUtils.compressTarGz(files, filepath);
+            return new File(filepath);
         } catch (IOException e) {
             e.printStackTrace();
         }
