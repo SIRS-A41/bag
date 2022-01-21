@@ -1,7 +1,9 @@
 package com.sirsa41;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 import com.google.gson.*;
@@ -193,7 +195,7 @@ public class Resources {
             } else {
                 folderName = projectName;
             }
-            boolean result;
+            Boolean result;
             try {
                 result = Config.createProjectFolder(folderName);
             } catch (Exception e1) {
@@ -280,14 +282,85 @@ public class Resources {
         return;
     }
 
+    public static void push() {
+        if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
+            System.out.println("You are not inside a valid project folder");
+            return;
+        }
+
+        if (!Auth.isLoggedIn()) {
+            System.out.println("You are not logged in. Login first");
+            return;
+        }
+
+        if (Config.getPrivateKey() == null) {
+            System.out.println("Generate an asymmetric key pair or set your private key first");
+            return;
+        }
+
+        final String projectId = Config.getProjectId();
+        final String key = Config.getProjectKey();
+
+        final File compressed = compressProject();
+        final String iv = Encryption.generateIv();
+        final File encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
+        final String signature = "";
+
+        HttpResponse<String> response;
+        try {
+            response = makeRequest(() -> ResourcesRequests.push(projectId, encrypted, iv, signature));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to push project files");
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Failed to push project files");
+            return;
+        }
+
+        if (response.statusCode() == 200) {
+            // todo
+        } else {
+            System.out.println("Failed to push project files");
+            System.out.println(response.body());
+        }
+        return;
+    }
+
     private static HttpResponse<String> makeRequest(Callable<HttpResponse<String>> request) throws Exception {
         HttpResponse<String> response = request.call();
         if (response.statusCode() == 403) {
-            final boolean success = Auth.refreshAccessToken();
+            final Boolean success = Auth.refreshAccessToken();
             if (success) {
                 response = request.call();
             }
         }
         return response;
+    }
+
+    static private File compressProject() {
+        final ArrayList<String> files = ls(".");
+        try {
+            FilesUtils.compressTarGz(files, ".bag/compress_tmp.tar.gz");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    static private ArrayList<String> ls(String path) {
+        File directoryPath = new File(path);
+        // List of all files and directories
+        String contents[] = directoryPath.list();
+
+        ArrayList<String> filteredList = new ArrayList<String>();
+        for (String filepath : contents) {
+            if (!filepath.equals(".bag")) {
+                filteredList.add(filepath);
+            }
+        }
+        return filteredList;
     }
 }

@@ -53,7 +53,7 @@ public class Auth {
 
     private static String createPassword() {
         String password = "", password2 = " ";
-        boolean firstTry = true;
+        Boolean firstTry = true;
         while (!password.equals(password2)) {
             if (!firstTry) {
                 System.out.println("Passwords do not match!");
@@ -89,7 +89,7 @@ public class Auth {
         return new String(passwordArray);
     }
 
-    public static boolean isLoggedIn() {
+    public static Boolean isLoggedIn() {
         final String refreshToken = Config.getRefreshToken();
         return refreshToken != null;
     }
@@ -109,7 +109,7 @@ public class Auth {
             System.out.println("Failed to secure password");
             return;
         }
-        final boolean result = actualLogin(username, password);
+        final Boolean result = actualLogin(username, password);
         if (result) {
             final String key = Resources.getPublicKey(username);
             if (key == null) {
@@ -119,7 +119,7 @@ public class Auth {
         return;
     }
 
-    private static boolean actualLogin(String username, String password) {
+    private static Boolean actualLogin(String username, String password) {
 
         HttpResponse<String> response;
         try {
@@ -215,7 +215,7 @@ public class Auth {
         return;
     }
 
-    public static boolean refreshAccessToken() {
+    public static Boolean refreshAccessToken() {
         if (!isLoggedIn()) {
             System.out.println("User not logged in");
             return false;

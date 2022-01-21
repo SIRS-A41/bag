@@ -1,7 +1,13 @@
 package com.sirsa41;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -10,6 +16,9 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -22,7 +31,9 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class Encryption {
 
@@ -64,6 +75,11 @@ public class Encryption {
         KeyFactory keyFacPub = KeyFactory.getInstance("RSA");
         PublicKey pub = keyFacPub.generatePublic(pubSpec);
         return pub;
+    }
+
+    private static Key stringToKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] encoded = Base64.getDecoder().decode(key);
+        return (new SecretKeySpec(encoded, 0, 16, "AES"));
     }
 
     public static String decrypt(String encryptedText) {
@@ -159,6 +175,106 @@ public class Encryption {
         }
     }
 
+    static public String generateIv() {
+        byte[] iv = new byte[16];
+        new SecureRandom().nextBytes(iv);
+        final IvParameterSpec _iv = new IvParameterSpec(iv);
+        return Base64.getEncoder().encodeToString(_iv.getIV());
+    }
+
+    static private IvParameterSpec loadIv(String iv) {
+        byte[] encoded = Base64.getDecoder().decode(iv);
+        return new IvParameterSpec(encoded);
+    }
+
+    static public File encryptFile(String filepath, String key, String iv) {
+        IvParameterSpec _iv = loadIv(iv);
+        return processFile(Cipher.ENCRYPT_MODE, filepath, key, _iv);
+    }
+
+    static public File decryptFile(String filepath, String key, String iv) {
+        IvParameterSpec _iv = loadIv(iv);
+        return processFile(Cipher.DECRYPT_MODE, filepath, key, _iv);
+    }
+
+    static private File processFile(int ciphermode, String filepath, String key, IvParameterSpec iv) {
+        final File inputFile = new File(filepath);
+        Key secretKey;
+        try {
+            secretKey = stringToKey(key);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e1) {
+            System.out.println("Failed to load key");
+            return null;
+        }
+        Cipher cipher;
+        try {
+            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            e.printStackTrace();
+            return null;
+        }
+        try {
+            cipher.init(ciphermode, secretKey, iv);
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        FileInputStream inputStream;
+        try {
+            inputStream = new FileInputStream(inputFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+        byte[] inputBytes = new byte[(int) inputFile.length()];
+        try {
+            inputStream.read(inputBytes);
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] outputBytes;
+        try {
+            outputBytes = cipher.doFinal(inputBytes);
+        } catch (IllegalBlockSizeException | BadPaddingException e) {
+            e.printStackTrace();
+            return null;
+        }
+        String newPath;
+        if (ciphermode == Cipher.ENCRYPT_MODE) {
+            newPath = inputFile.getAbsolutePath() + ".encrypted";
+        } else {
+            final String originalPath = inputFile.getAbsolutePath();
+            if (originalPath.endsWith(".encrypted")) {
+                newPath = originalPath.substring(0, originalPath.lastIndexOf('.'));
+            } else {
+                newPath = originalPath;
+            }
+
+        }
+        FileOutputStream outputStream;
+        try {
+            outputStream = new FileOutputStream(newPath);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        try {
+            outputStream.write(outputBytes);
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        return new File(newPath);
+
+    }
+
     static public String deriveKey(String password, String salt, int keyLen)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
@@ -166,5 +282,127 @@ public class Encryption {
         SecretKey key = kf.generateSecret(specs);
         final byte[] encoded = key.getEncoded();
         return Base64.getEncoder().encodeToString(encoded);
+    }
+
+    static public String signFile(File file, String privateKey) {
+        PrivateKey key;
+        try {
+            key = stringToPrivateKey(privateKey);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            System.out.println("Failed to load privte key");
+            return null;
+        }
+        Signature sign;
+        try {
+            sign = Signature.getInstance("SHA256withRSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+        // Initialize the signature
+        try {
+            sign.initSign(key);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        FileInputStream inputStream;
+        try {
+            inputStream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+        byte[] inputBytes = new byte[(int) file.length()];
+        try {
+            inputStream.read(inputBytes);
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        // Adding data to the signature
+        try {
+            sign.update(inputBytes);
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        // Calculating the signature
+        try {
+            byte[] signature = sign.sign();
+            return Base64.getEncoder().encodeToString(signature);
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    static public Boolean validateSignature(File file, String signature, String publicKey) {
+        PublicKey key;
+        try {
+            key = stringToPublicKey(publicKey);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            System.out.println("Failed to load public key");
+            return null;
+        }
+        Signature sign;
+        try {
+            sign = Signature.getInstance("SHA256withRSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+        // Initialize the signature
+        try {
+            sign.initVerify(key);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        FileInputStream inputStream;
+        try {
+            inputStream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+        byte[] inputBytes = new byte[(int) file.length()];
+        try {
+            inputStream.read(inputBytes);
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        // Adding data to the signature
+        try {
+            sign.update(inputBytes);
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        // Validate the signature
+        try {
+            byte[] _signature = Base64.getDecoder().decode(signature);
+            return sign.verify(_signature);
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        File file = new File(".bag/compress_tmp.tar.gz.encrypted");
+        String signature = signFile(file, Config.getPrivateKey());
+        boolean result = validateSignature(file, signature,
+                "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAglYfcEgkewQ6k62gDImAoW0Ii03vYtAf2JOTwEul6q6B2BhGAp3ChubAoOto1LSQApZEagUKTuyS5g/sTMwPMTtOjouvdv1BgiQ9zMDpCLSaGdPkvVyfLnLkPDsfol/Xtz/qIQjDmkVij57OYZq9ziolmBwoLbnVTzot8+SV7Xz3/fII0qwRyT0Q1aIUtuh32ATasGRs9UUurBJ9hpPFkQgLORJvsTUOl95DOy2I5Z6O7dMDq8M6VheqYERilbNEFMhNoVfT78umlxDPStOis2J0z0+H7ER3qOULXDzTQLnof3gvSIROC/CmT7cJHDg2XzmLCCdIkrI9lmzUfwFVHwIDAQAB");
+        System.out.println(result);
     }
 }

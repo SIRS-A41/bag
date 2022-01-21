@@ -1,5 +1,6 @@
 package com.sirsa41;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.*;
@@ -102,6 +103,27 @@ public class ResourcesRequests {
                 HttpRequest request = HttpRequest.newBuilder()
                                 .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
                                 .uri(URI.create(HOSTNAME + "/share"))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
+
+        public static HttpResponse<String> push(String projectId, File encryptedProject, String iv, String signature)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("project", projectId);
+                requestJson.addProperty("iv", iv);
+                requestJson.addProperty("signature", signature);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .uri(URI.create(HOSTNAME + "/push"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
                                 .setHeader("Authorization", "Bearer " + accessToken)
                                 .build();

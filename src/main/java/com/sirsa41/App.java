@@ -1,8 +1,5 @@
 package com.sirsa41;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-
 /**
  * Hello world!
  *
@@ -49,6 +46,10 @@ public class App {
                 }
                 final String user = args[1];
                 Resources.share(user);
+            } else if (command.equals("push")) {
+                Resources.push();
+            } else if (command.equals("pull")) {
+                // Resources.pull();
             } else {
                 System.out.println(String.format("bag %s not implemented", command));
             }

@@ -23,7 +23,7 @@ public class Config {
         createFolder(CONFIG_PATH);
     }
 
-    public static boolean createProjectFolder(String name) throws Exception {
+    public static Boolean createProjectFolder(String name) throws Exception {
         if (!projectFolderExists(name)) {
             createFolder(projectFolderPath(name));
             return true;
@@ -52,17 +52,17 @@ public class Config {
         }
     }
 
-    public static boolean projectFolderExists(String name) {
+    public static Boolean projectFolderExists(String name) {
         final File f = new File(projectFolderPath(name));
         return f.exists();
     }
 
-    public static boolean projectConfigFolderExists(String name) {
+    public static Boolean projectConfigFolderExists(String name) {
         final File f = new File(projectConfigFolderPath(name));
         return f.exists();
     }
 
-    public static boolean validProjectConfig() {
+    public static Boolean validProjectConfig() {
         File f = new File(Paths.get(projectConfigFolderPath(null), "key").toString());
         if (!f.exists())
             return false;
@@ -101,8 +101,8 @@ public class Config {
         }
     }
 
-    public static boolean setCurrentDirectory(String directory_name) {
-        boolean result = false; // Boolean indicating whether directory was set
+    public static Boolean setCurrentDirectory(String directory_name) {
+        Boolean result = false; // Boolean indicating whether directory was set
         File directory; // Desired current working directory
 
         directory = new File(directory_name).getAbsoluteFile();
@@ -125,7 +125,7 @@ public class Config {
     private static void createFolder(String path) throws Exception {
         File f1 = new File(path);
         // Creating a folder using mkdir() method
-        boolean folderCreated = f1.mkdirs();
+        Boolean folderCreated = f1.mkdirs();
         if (!folderCreated) {
             throw new Exception("Failed to create folder: " + CONFIG_PATH);
         }
@@ -236,7 +236,7 @@ public class Config {
         emptyDir(CONFIG_PATH);
     }
 
-    private static boolean fileExists(String filepath) {
+    private static Boolean fileExists(String filepath) {
         File file = new File(filepath);
         return file.exists();
     }
