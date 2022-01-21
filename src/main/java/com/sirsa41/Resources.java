@@ -3,6 +3,7 @@ package com.sirsa41;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
@@ -101,6 +102,12 @@ public class Resources {
                 System.out.println("Failed to set private_key cache:");
                 System.out.println(privateKey);
             }
+            try {
+                Config.setPublicKey(publicKey);
+            } catch (Exception e) {
+                System.out.println("Failed to set public_key cache:");
+                System.out.println(publicKey);
+            }
         } else {
             System.out.println("Failed to set public key");
             System.out.println(response.body());
@@ -125,10 +132,21 @@ public class Resources {
         }
 
         System.out.println(String.format("Creating project: %s", projectName));
+        String projectKey;
+        try {
+            projectKey = Encryption.generateProjectKey();
+        } catch (NoSuchAlgorithmException e1) {
+            System.out.println("Failed to generate project AES key");
+            return;
+        }
+        String publicKey = Config.getPublicKey();
+        String encryptedKey = Encryption.encrypt(projectKey, publicKey);
+        System.out.println(projectKey);
+        System.out.println(encryptedKey);
 
         HttpResponse<String> response;
         try {
-            response = makeRequest(() -> ResourcesRequests.create(projectName));
+            response = makeRequest(() -> ResourcesRequests.create(projectName, encryptedKey));
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to create a project");
@@ -140,17 +158,13 @@ public class Resources {
         }
 
         if (response.statusCode() == 200) {
-            final String bodyRaw = response.body();
-            JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
-            final String projectId = body.get("id").getAsString();
+            final String projectId = response.body();
 
-            final String encryptedKey = body.get("key").getAsString();
-            final String key = Encryption.decrypt(encryptedKey);
             try {
                 Config.createProjectConfigFolder(null);
 
                 Config.storeProjectId(projectId, null);
-                Config.storeProjectKey(key, null);
+                Config.storeProjectKey(projectKey, null);
             } catch (Exception e) {
                 System.out.println("Failed to create project config folder");
             }
@@ -308,7 +322,10 @@ public class Resources {
         }
         final String iv = Encryption.generateIv();
         final File encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
-        final String signature = "";
+
+        final String privateKey = Config.getPrivateKey();
+        final String signature = Encryption.signFile(encrypted, privateKey);
+        System.out.println(signature);
 
         HttpResponse<String> response;
         try {
@@ -326,8 +343,8 @@ public class Resources {
         if (response.statusCode() == 200) {
             // todo
             System.out.println("success");
-            compressed.delete();
-            encrypted.delete();
+            // compressed.delete();
+            // encrypted.delete();
         } else {
             System.out.println("Failed to push project files");
             System.out.println(response.body());

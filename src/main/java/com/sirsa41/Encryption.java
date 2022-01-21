@@ -28,6 +28,7 @@ import java.util.Base64;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -54,6 +55,15 @@ public class Encryption {
 
         final String[] result = { publickey, privateKey };
         return result;
+    }
+
+    public static String generateProjectKey() throws NoSuchAlgorithmException {
+
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(256);
+        SecretKey key = keyGenerator.generateKey();
+        byte[] encodedKey = key.getEncoded();
+        return Base64.getEncoder().encodeToString(encodedKey);
     }
 
     private static String keyToString(Key key) {

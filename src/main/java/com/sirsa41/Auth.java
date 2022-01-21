@@ -114,6 +114,12 @@ public class Auth {
             final String key = Resources.getPublicKey(username);
             if (key == null) {
                 Resources.generateKeys();
+            } else {
+                try {
+                    Config.setPublicKey(key);
+                } catch (Exception e) {
+                    System.out.println("Failed to cache public_key");
+                }
             }
         }
         return;

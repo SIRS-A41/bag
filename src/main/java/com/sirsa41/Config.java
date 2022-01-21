@@ -266,4 +266,11 @@ public class Config {
         writeToFile(key, PRIVATE_KEY_PATH);
     }
 
+    public static void setPublicKey(String key) throws Exception {
+        if (!fileExists(CONFIG_PATH)) {
+            createConfigFolder();
+        }
+        writeToFile(key, PUBLIC_KEY_PATH);
+    }
+
 }

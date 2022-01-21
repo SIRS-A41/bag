@@ -26,10 +26,11 @@ public class ResourcesRequests {
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
-        public static HttpResponse<String> create(String projectName)
+        public static HttpResponse<String> create(String projectName, String encryptedKey)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
                 requestJson.addProperty("name", projectName);
+                requestJson.addProperty("key", encryptedKey);
 
                 final String accessToken = Config.getAccessToken();
 
