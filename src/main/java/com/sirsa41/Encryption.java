@@ -409,10 +409,8 @@ public class Encryption {
     }
 
     public static void main(String[] args) {
-        File file = new File(".bag/compress_tmp.tar.gz.encrypted");
-        String signature = signFile(file, Config.getPrivateKey());
-        boolean result = validateSignature(file, signature,
-                "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAglYfcEgkewQ6k62gDImAoW0Ii03vYtAf2JOTwEul6q6B2BhGAp3ChubAoOto1LSQApZEagUKTuyS5g/sTMwPMTtOjouvdv1BgiQ9zMDpCLSaGdPkvVyfLnLkPDsfol/Xtz/qIQjDmkVij57OYZq9ziolmBwoLbnVTzot8+SV7Xz3/fII0qwRyT0Q1aIUtuh32ATasGRs9UUurBJ9hpPFkQgLORJvsTUOl95DOy2I5Z6O7dMDq8M6VheqYERilbNEFMhNoVfT78umlxDPStOis2J0z0+H7ER3qOULXDzTQLnof3gvSIROC/CmT7cJHDg2XzmLCCdIkrI9lmzUfwFVHwIDAQAB");
-        System.out.println(result);
+        decryptFile("/home/robot/Documents/SIRS-A41/resources-api/compress_tmp.tar.gz.encrypted",
+                "lSGXHee0o2dLqC7G6TWNDarmpq3P0pOyQRyvYZcHL9c=",
+                "FtAI/JTcm1UyYwPZd1enGw==");
     }
 }

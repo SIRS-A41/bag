@@ -5,11 +5,15 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.*;
+import java.net.http.HttpRequest.BodyPublisher;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,21 +131,25 @@ public class ResourcesRequests {
 
                 final String accessToken = Config.getAccessToken();
 
-                Map<Object, Object> data = new LinkedHashMap<>();
+                Map<Object, Object> data = new HashMap<>();
+                // fields
                 data.put("project", projectId);
                 data.put("iv", iv);
                 data.put("signature", signature);
-                data.put("file", encryptedProject);
+
+                // file upload
+                data.put("file", encryptedProject.toPath());
 
                 // Random 256 length string is used as multipart boundary
                 String boundary = new BigInteger(256, new Random()).toString();
 
                 HttpRequest request = HttpRequest.newBuilder()
-                                .uri(URI.create(HOSTNAME + "/push"))
-                                .POST(ofMimeMultipartData(data, boundary))
+                                .uri(URI.create(HOSTNAME + "/upload"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
                                 .setHeader("Authorization", "Bearer " + accessToken)
-                                .header("Content-Type", "multipart/form-data;boundary=" + boundary)
+                                .headers("Content-Type",
+                                                "multipart/form-data; boundary=" + boundary)
+                                .POST(ofMimeMultipartData(data, boundary))
                                 .build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -149,41 +157,35 @@ public class ResourcesRequests {
                 return response;
         }
 
-        static private HttpRequest.BodyPublisher ofMimeMultipartData(Map<Object, Object> data,
+        public static BodyPublisher ofMimeMultipartData(Map<Object, Object> data,
                         String boundary) throws IOException {
-                // Result request body
-                List<byte[]> byteArrays = new ArrayList<>();
-
-                // Separator with boundary
-                byte[] separator = ("--" + boundary + "\r\nContent-Disposition: form-data; name=")
-                                .getBytes(StandardCharsets.UTF_8);
-
-                // Iterating over data parts
+                ArrayList<byte[]> byteArrays = new ArrayList<byte[]>();
+                byte[] separator = ("--" + boundary
+                                + "\r\nContent-Disposition: form-data; name=")
+                                                .getBytes(StandardCharsets.UTF_8);
                 for (Map.Entry<Object, Object> entry : data.entrySet()) {
-
-                        // Opening boundary
                         byteArrays.add(separator);
 
-                        // If value is type of Path (file) append content type with file name and file
-                        // binaries, otherwise simply append key=value
                         if (entry.getValue() instanceof Path) {
                                 Path path = (Path) entry.getValue();
                                 String mimeType = Files.probeContentType(path);
-                                byteArrays.add(("\"" + entry.getKey() + "\"; filename=\"" + path.getFileName()
-                                                + "\"\r\nContent-Type: " + mimeType + "\r\n\r\n")
-                                                                .getBytes(StandardCharsets.UTF_8));
+                                if (mimeType == null) {
+                                        mimeType = "application/octet-stream";
+                                }
+                                byteArrays.add(("\"" + entry.getKey() + "\"; filename=\""
+                                                + path.getFileName() + "\"\r\nContent-Type: " + mimeType
+                                                + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
                                 byteArrays.add(Files.readAllBytes(path));
                                 byteArrays.add("\r\n".getBytes(StandardCharsets.UTF_8));
                         } else {
-                                byteArrays.add(("\"" + entry.getKey() + "\"\r\n\r\n" + entry.getValue() + "\r\n")
-                                                .getBytes(StandardCharsets.UTF_8));
+                                byteArrays.add(
+                                                ("\"" + entry.getKey() + "\"\r\n\r\n" + entry.getValue()
+                                                                + "\r\n").getBytes(StandardCharsets.UTF_8));
                         }
                 }
-
-                // Closing boundary
-                byteArrays.add(("--" + boundary + "--").getBytes(StandardCharsets.UTF_8));
-
-                // Serializing as byte array
-                return HttpRequest.BodyPublishers.ofByteArrays(byteArrays);
+                byteArrays
+                                .add(("--" + boundary + "--").getBytes(StandardCharsets.UTF_8));
+                return BodyPublishers.ofByteArrays(byteArrays);
         }
+
 }

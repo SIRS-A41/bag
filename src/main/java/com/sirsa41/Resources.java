@@ -141,8 +141,6 @@ public class Resources {
         }
         String publicKey = Config.getPublicKey();
         String encryptedKey = Encryption.encrypt(projectKey, publicKey);
-        System.out.println(projectKey);
-        System.out.println(encryptedKey);
 
         HttpResponse<String> response;
         try {
@@ -325,7 +323,6 @@ public class Resources {
 
         final String privateKey = Config.getPrivateKey();
         final String signature = Encryption.signFile(encrypted, privateKey);
-        System.out.println(signature);
 
         HttpResponse<String> response;
         try {
@@ -341,10 +338,9 @@ public class Resources {
         }
 
         if (response.statusCode() == 200) {
-            // todo
-            System.out.println("success");
-            // compressed.delete();
-            // encrypted.delete();
+            final String commit = response.body();
+            System.out.println("Successful push");
+            System.out.println(String.format("Commit: %s", commit));
         } else {
             System.out.println("Failed to push project files");
             System.out.println(response.body());
