@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Scanner;
@@ -43,12 +44,12 @@ public class Config {
     }
 
     private static String projectConfigFolderPath(String projectName) {
-        final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
         if (projectName != null) {
             final String path = Paths.get(projectFolderPath(projectName), ".bag").toString();
             return path;
         } else {
-            return Paths.get(cwd, "/.bag").toString();
+            final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
+            return Paths.get(cwd, ".bag").toString();
         }
     }
 
@@ -95,6 +96,15 @@ public class Config {
     public static void storeProjectId(String id, String projectName) {
         try {
             writeToFile(id, Paths.get(projectConfigFolderPath(projectName), "project_id").toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    public static void storeProjectHash(String hash, String projectName) {
+        try {
+            writeToFile(hash, Paths.get(projectConfigFolderPath(projectName), "hash").toString());
         } catch (IOException e) {
             e.printStackTrace();
             return;

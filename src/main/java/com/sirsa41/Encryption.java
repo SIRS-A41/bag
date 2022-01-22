@@ -1,18 +1,23 @@
 package com.sirsa41;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.security.DigestInputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -294,7 +299,7 @@ public class Encryption {
         return Base64.getEncoder().encodeToString(encoded);
     }
 
-    static public String signFile(File file, String privateKey) {
+    static public String signHash(String hash, String privateKey) {
         PrivateKey key;
         try {
             key = stringToPrivateKey(privateKey);
@@ -317,22 +322,7 @@ public class Encryption {
             return null;
         }
 
-        FileInputStream inputStream;
-        try {
-            inputStream = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-        byte[] inputBytes = new byte[(int) file.length()];
-        try {
-            inputStream.read(inputBytes);
-            inputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-
+        final byte[] inputBytes = Base64.getDecoder().decode(hash);
         // Adding data to the signature
         try {
             sign.update(inputBytes);
@@ -349,6 +339,36 @@ public class Encryption {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+
+    static public String hashToHex(String hash) {
+        byte[] bytes = Base64.getDecoder().decode(hash);
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
+    static public String hashFile(File file) throws IOException, NoSuchAlgorithmException {
+
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try (InputStream fis = new FileInputStream(file)) {
+            int n = 0;
+            byte[] buffer = new byte[8192];
+            while (n != -1) {
+                n = fis.read(buffer);
+                if (n > 0) {
+                    digest.update(buffer, 0, n);
+                }
+            }
+        }
+        return Base64.getEncoder().encodeToString(digest.digest());
+
     }
 
     static public Boolean validateSignature(File file, String signature, String publicKey) {

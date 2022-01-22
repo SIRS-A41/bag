@@ -321,8 +321,18 @@ public class Resources {
         final String iv = Encryption.generateIv();
         final File encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
 
+        String hash;
+        try {
+            hash = Encryption.hashFile(encrypted);
+        } catch (NoSuchAlgorithmException | IOException e1) {
+            System.out.println("Failed to hash project");
+            return;
+        }
+        String hashHex = Encryption.hashToHex(hash);
+        Config.storeProjectHash(hashHex, null);
+
         final String privateKey = Config.getPrivateKey();
-        final String signature = Encryption.signFile(encrypted, privateKey);
+        final String signature = Encryption.signHash(hash, privateKey);
 
         HttpResponse<String> response;
         try {
@@ -338,7 +348,12 @@ public class Resources {
         }
 
         if (response.statusCode() == 200) {
+            encrypted.delete();
+            compressed.delete();
             final String commit = response.body();
+            if (!commit.equals(hashHex)) {
+                System.out.println("Your local hash differs from the server hash. The server might be compromised");
+            }
             System.out.println("Successful push");
             System.out.println(String.format("Commit: %s", commit));
         } else {
