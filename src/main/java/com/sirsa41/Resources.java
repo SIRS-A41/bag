@@ -3,18 +3,14 @@ package com.sirsa41;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpResponse;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
 import com.google.gson.*;
