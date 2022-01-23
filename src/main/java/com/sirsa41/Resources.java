@@ -321,6 +321,10 @@ public class Resources {
     }
 
     public static void push() {
+        if (FilesUtils.ls(Config.projectFolderPath(null)).size() == 0) {
+            System.out.println("You have no files to push");
+            return;
+        }
         File compressed = null;
         File encrypted = null;
         try {
@@ -651,7 +655,7 @@ public class Resources {
                 } else {
                     indicator = " ";
                 }
-                System.out.println(String.format("%s %s - %s - %s", indicator, timestamp, user, version));
+                System.out.println(String.format("%s %s \t %s \t %s", indicator, timestamp, user, version));
             }
         } else {
             System.out.println("Failed to retrieve project history");
@@ -663,7 +667,7 @@ public class Resources {
     static private String parseSecondsSinceEpoch(String timestamp) {
         long seconds = Integer.parseInt(timestamp) * 1;
         LocalDateTime dateTime = LocalDateTime.ofEpochSecond(seconds, 0, ZoneOffset.UTC);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm", Locale.ENGLISH);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ENGLISH);
         return dateTime.format(formatter);
     }
 
