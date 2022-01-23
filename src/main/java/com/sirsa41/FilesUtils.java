@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -72,7 +73,16 @@ class FilesUtils {
         }
     }
 
-    static public void decompressTarGz(String tarGz, String targetDir) throws IOException {
+    static public Path writeFile(String path, byte[] bytes) {
+        try {
+            return Files.write(Paths.get(path), bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    static public File decompressTarGz(String tarGz, String targetDir) throws IOException {
         Files.createDirectories(Paths.get(targetDir));
         try (InputStream fi = Files.newInputStream(Paths.get(tarGz));
                 BufferedInputStream bi = new BufferedInputStream(fi);
@@ -101,10 +111,39 @@ class FilesUtils {
                         while ((count = ti.read(data, 0, BUFFER_SIZE)) != -1) {
                             dest.write(data, 0, count);
                         }
+                        final File file = new File(newPath);
+                        file.setLastModified(entry.getLastModifiedDate().getTime());
                     }
                 }
+            }
+            return new File(targetDir);
+        }
+    }
+
+    static public void moveFiles(String sourcePath, String destPath) {
+        ArrayList<String> filepaths = ls(sourcePath);
+        for (String filepath : filepaths) {
+            try {
+                Files.move(Paths.get(sourcePath, filepath), Paths.get(destPath, filepath),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                System.out.println(e);
+                System.out.println("Failed to move " + filepath);
             }
         }
     }
 
+    static public ArrayList<String> ls(String path) {
+        File directoryPath = new File(path);
+        // List of all files and directories
+        String contents[] = directoryPath.list();
+
+        ArrayList<String> filteredList = new ArrayList<String>();
+        for (String filepath : contents) {
+            if (!filepath.equals(".bag")) {
+                filteredList.add(filepath);
+            }
+        }
+        return filteredList;
+    }
 }

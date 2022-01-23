@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Config {
@@ -38,18 +39,34 @@ public class Config {
         }
     }
 
-    private static String projectFolderPath(String name) {
+    public static String projectFolderPath(String name) {
         final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
-        return Paths.get(cwd, name).toString();
+        if (name == null) {
+            return cwd;
+        } else {
+            return Paths.get(cwd, name).toString();
+        }
     }
 
-    private static String projectConfigFolderPath(String projectName) {
+    public static String projectConfigFolderPath(String projectName) {
         if (projectName != null) {
             final String path = Paths.get(projectFolderPath(projectName), ".bag").toString();
             return path;
         } else {
             final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
             return Paths.get(cwd, ".bag").toString();
+        }
+    }
+
+    public static void deleteProjectFiles() {
+        final String path = projectFolderPath(null);
+        ArrayList<String> files = FilesUtils.ls(path);
+        for (String filepath : files) {
+            try {
+                Files.delete(Paths.get(filepath));
+            } catch (IOException e) {
+                System.out.println("Failed to delete " + filepath);
+            }
         }
     }
 
@@ -111,9 +128,9 @@ public class Config {
         }
     }
 
-    public static void storeProjectVersion(String hash, String projectName) {
+    public static void storeProjectVersion(String version, String projectName) {
         try {
-            writeToFile(hash, Paths.get(projectConfigFolderPath(projectName), "version").toString());
+            writeToFile(version, Paths.get(projectConfigFolderPath(projectName), "version").toString());
         } catch (IOException e) {
             e.printStackTrace();
             return;

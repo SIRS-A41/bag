@@ -3,6 +3,8 @@ package com.sirsa41;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -323,6 +325,7 @@ public class Resources {
             final String projectId = Config.getProjectId();
             final String key = Config.getProjectKey();
 
+            System.out.println("Compressing project files...");
             compressed = compressProject();
             if (compressed == null) {
                 System.out.println("Failed to compress project");
@@ -338,6 +341,7 @@ public class Resources {
             }
             final String versionHex = Encryption.hashToHex(version);
 
+            System.out.println("Checking local version against remote server...");
             HttpResponse<String> response;
             try {
                 response = makeRequest(() -> ResourcesRequests.hasCommit(projectId, versionHex));
@@ -357,11 +361,12 @@ public class Resources {
                 System.out.println(String.format("Remote server already has commit %s", versionHex));
                 throw new Exception();
             }
-            Config.storeProjectVersion(versionHex, null);
 
+            System.out.println("Encrypting project files...");
             final String iv = Encryption.generateIv();
             encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
 
+            System.out.println("Signing commit...");
             String hash;
             try {
                 hash = Encryption.hashFile(encrypted);
@@ -373,6 +378,7 @@ public class Resources {
             final String privateKey = Config.getPrivateKey();
             final String signature = Encryption.signHash(hash, privateKey);
 
+            System.out.println("Pushing project files to remote server..");
             try {
                 final File _encrypted = encrypted;
                 response = makeRequest(() -> ResourcesRequests.push(projectId, _encrypted, iv, signature, versionHex));
@@ -390,8 +396,10 @@ public class Resources {
                 final String hashHexServer = response.body();
                 final String hashHex = Encryption.hashToHex(hash);
                 if (!hashHexServer.equals(hashHex)) {
-                    System.out.println("Your local hash differs from the server hash. The server might be compromised");
+                    System.out.println(
+                            "Your local hash differs from the hash the server received. The server might be compromised");
                 }
+                Config.storeProjectVersion(versionHex, null);
                 System.out.println("Successful push");
                 System.out.println(String.format("Commit: %s", versionHex));
             } else {
@@ -426,11 +434,6 @@ public class Resources {
                 return;
             }
 
-            if (Config.getPrivateKey() == null) {
-                System.out.println("Generate an asymmetric key pair or set your private key first");
-                return;
-            }
-
             final String projectId = Config.getProjectId();
             if (projectId == null) {
                 System.out.println("Invalid project_id");
@@ -441,8 +444,25 @@ public class Resources {
                 System.out.println("Invalid project key");
                 throw new Exception();
             }
-            final String myVersion = Config.getProjectVersion();
 
+            compressed = compressProject();
+            if (compressed == null) {
+                System.out.println("Failed to compress project");
+                throw new Exception();
+            }
+
+            String myVersion;
+            try {
+                myVersion = Encryption.hashFile(compressed);
+            } catch (NoSuchAlgorithmException | IOException e1) {
+                compressed.delete();
+                System.out.println("Failed to hash project");
+                throw new Exception();
+            }
+            compressed.delete();
+            final String myVersionHex = Encryption.hashToHex(myVersion);
+
+            System.out.println("Checking local version against remote server...");
             HttpResponse<String> response;
             try {
                 response = makeRequest(() -> ResourcesRequests.versions(projectId));
@@ -451,13 +471,14 @@ public class Resources {
                 System.out.println("Failed to check latest commit version");
                 throw new Exception();
             }
+            String version;
             if (response.statusCode() == 200) {
                 final String bodyRaw = response.body();
                 final JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
                 final JsonArray history = body.get("history").getAsJsonArray();
                 final JsonObject commit = history.get(0).getAsJsonObject();
-                final String version = commit.get("version").getAsString();
-                if (version.equals(myVersion)) {
+                version = commit.get("version").getAsString();
+                if (version.equals(myVersionHex)) {
                     System.out.println("You are already on the latest commit");
                     throw new Exception();
                 }
@@ -466,23 +487,67 @@ public class Resources {
                 throw new Exception();
             }
 
+            System.out.println("Pulling latest commit from remote server...");
+            HttpResponse<byte[]> response2;
             try {
-                response = makeRequest(() -> ResourcesRequests.pull(projectId));
+                response2 = makeRequest2(() -> ResourcesRequests.pull(projectId));
             } catch (IOException e) {
                 e.printStackTrace();
-                System.out.println("Failed to push project files");
+                System.out.println("Failed to pull project files");
                 throw new Exception();
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Failed to push project files");
+                System.out.println("Failed to pull project files");
                 throw new Exception();
             }
 
-            if (response.statusCode() == 200) {
-                // todo
+            if (response2.statusCode() == 206) {
+                final String signature = response2.headers().firstValue("x-signature").get();
+                final String user = response2.headers().firstValue("x-user").get();
+                final String iv = response2.headers().firstValue("x-iv").get();
+
+                final String publicKey = getPublicKey(user);
+                if (publicKey == null) {
+                    System.out.println(String.format("Failed to retreive public key of %s", user));
+                    throw new Exception();
+                }
+
+                System.out.println("Verifying file signature...");
+                final byte[] file = response2.body();
+                final String hash = Encryption.hashBytes(file);
+                final boolean valid = Encryption.validateSignature(hash, signature, publicKey);
+
+                if (!valid) {
+                    System.out.println("Downloaded file signature is not valid. The server might be compromised");
+                    System.out.println("Aborting...");
+                    throw new Exception();
+                }
+                final String configPath = Config.projectConfigFolderPath(null);
+                final Path encryptedPath = FilesUtils.writeFile(
+                        Paths.get(configPath, String.format("%s.encrypted", version))
+                                .toString(),
+                        file);
+                if (encryptedPath == null) {
+                    System.out.println("Failed to save project files");
+                    throw new Exception();
+                }
+
+                System.out.println("Decrypting project files...");
+                encrypted = encryptedPath.toFile();
+                compressed = Encryption.decryptFile(encrypted.getAbsolutePath(), key, iv);
+                final String destPath = Paths.get(Config.projectFolderPath(null)).toString();
+
+                System.out.println("Decompressing project files...");
+                Config.deleteProjectFiles();
+                FilesUtils.decompressTarGz(compressed.getAbsolutePath(),
+                        destPath);
+                Config.storeProjectVersion(version, null);
+
+                System.out.println("Successful pull!");
+                System.out.println(String.format("Commit: %s", version));
             } else {
-                System.out.println("Failed to push project files");
-                System.out.println(response.body());
+                System.out.println("Failed to pull project files");
+                System.out.println(response2.body());
             }
         } catch (Exception e) {
             // do nothing
@@ -568,6 +633,17 @@ public class Resources {
         return dateTime.format(formatter);
     }
 
+    private static HttpResponse<byte[]> makeRequest2(Callable<HttpResponse<byte[]>> request) throws Exception {
+        HttpResponse<byte[]> response = request.call();
+        if (response.statusCode() == 403) {
+            final Boolean success = Auth.refreshAccessToken();
+            if (success) {
+                response = request.call();
+            }
+        }
+        return response;
+    }
+
     private static HttpResponse<String> makeRequest(Callable<HttpResponse<String>> request) throws Exception {
         HttpResponse<String> response = request.call();
         if (response.statusCode() == 403) {
@@ -580,7 +656,7 @@ public class Resources {
     }
 
     static private File compressProject() {
-        final ArrayList<String> files = ls(".");
+        final ArrayList<String> files = FilesUtils.ls(".");
         final String filepath = ".bag/compress_tmp.tar.gz";
         try {
             FilesUtils.compressTarGz(files, filepath);
@@ -592,17 +668,4 @@ public class Resources {
         return null;
     }
 
-    static private ArrayList<String> ls(String path) {
-        File directoryPath = new File(path);
-        // List of all files and directories
-        String contents[] = directoryPath.list();
-
-        ArrayList<String> filteredList = new ArrayList<String>();
-        for (String filepath : contents) {
-            if (!filepath.equals(".bag")) {
-                filteredList.add(filepath);
-            }
-        }
-        return filteredList;
-    }
 }

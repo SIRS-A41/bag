@@ -354,6 +354,12 @@ public class Encryption {
         return new String(hexChars);
     }
 
+    static public String hashBytes(byte[] bytes) throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        digest.update(bytes);
+        return Base64.getEncoder().encodeToString(digest.digest());
+    }
+
     static public String hashFile(File file) throws IOException, NoSuchAlgorithmException {
 
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -371,7 +377,7 @@ public class Encryption {
 
     }
 
-    static public Boolean validateSignature(File file, String signature, String publicKey) {
+    static public Boolean validateSignatureBytes(byte[] inputBytes, String signature, String publicKey) {
         PublicKey key;
         try {
             key = stringToPublicKey(publicKey);
@@ -394,22 +400,48 @@ public class Encryption {
             return null;
         }
 
-        FileInputStream inputStream;
+        // Adding data to the signature
         try {
-            inputStream = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-        byte[] inputBytes = new byte[(int) file.length()];
-        try {
-            inputStream.read(inputBytes);
-            inputStream.close();
-        } catch (IOException e) {
+            sign.update(inputBytes);
+        } catch (SignatureException e) {
             e.printStackTrace();
             return null;
         }
 
+        // Validate the signature
+        try {
+            byte[] _signature = Base64.getDecoder().decode(signature);
+            return sign.verify(_signature);
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    static public Boolean validateSignature(String hash, String signature, String publicKey) {
+        PublicKey key;
+        try {
+            key = stringToPublicKey(publicKey);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            System.out.println("Failed to load public key");
+            return null;
+        }
+        Signature sign;
+        try {
+            sign = Signature.getInstance("SHA256withRSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+        // Initialize the signature
+        try {
+            sign.initVerify(key);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] inputBytes = Base64.getDecoder().decode(hash);
         // Adding data to the signature
         try {
             sign.update(inputBytes);

@@ -10,12 +10,9 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -105,7 +102,7 @@ public class ResourcesRequests {
                 return response;
         }
 
-        public static HttpResponse<String> pull(String projectId)
+        public static HttpResponse<byte[]> pull(String projectId)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
                 requestJson.addProperty("project", projectId);
@@ -119,7 +116,7 @@ public class ResourcesRequests {
                                 .setHeader("Authorization", "Bearer " + accessToken)
                                 .build();
 
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
                 return response;
         }
@@ -204,7 +201,7 @@ public class ResourcesRequests {
                 String boundary = new BigInteger(256, new Random()).toString();
 
                 HttpRequest request = HttpRequest.newBuilder()
-                                .uri(URI.create(HOSTNAME + "/upload"))
+                                .uri(URI.create(HOSTNAME + "/push"))
                                 .setHeader("User-Agent", "Java 11 HttpClient Bag")
                                 .setHeader("Authorization", "Bearer " + accessToken)
                                 .headers("Content-Type",
