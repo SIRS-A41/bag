@@ -51,14 +51,14 @@ public class App {
             } else if (command.equals("history")) {
                 Resources.history();
             } else if (command.equals("pull")) {
-                Resources.pull();
+                Resources.pull(null);
             } else if (command.equals("checkout")) {
                 if (args.length < 2) {
                     System.out.println("Provide commit version");
                     return;
                 }
                 final String version = args[1];
-                // Resources.checkout(version);
+                Resources.pull(version);
             } else {
                 System.out.println(String.format("bag %s not implemented", command));
             }

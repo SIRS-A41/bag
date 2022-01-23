@@ -40,7 +40,7 @@ public class Config {
     }
 
     public static String projectFolderPath(String name) {
-        final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
+        final String cwd = System.getProperty("user.dir").toString();
         if (name == null) {
             return cwd;
         } else {
@@ -53,7 +53,7 @@ public class Config {
             final String path = Paths.get(projectFolderPath(projectName), ".bag").toString();
             return path;
         } else {
-            final String cwd = FileSystems.getDefault().getPath("").toAbsolutePath().toString();
+            final String cwd = System.getProperty("user.dir").toString();
             return Paths.get(cwd, ".bag").toString();
         }
     }

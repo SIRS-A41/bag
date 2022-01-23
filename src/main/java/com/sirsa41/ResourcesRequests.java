@@ -102,10 +102,11 @@ public class ResourcesRequests {
                 return response;
         }
 
-        public static HttpResponse<byte[]> pull(String projectId)
+        public static HttpResponse<byte[]> pull(String projectId, String version)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
                 requestJson.addProperty("project", projectId);
+                requestJson.addProperty("version", version);
 
                 final String accessToken = Config.getAccessToken();
 

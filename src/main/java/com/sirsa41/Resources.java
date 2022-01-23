@@ -3,6 +3,7 @@ package com.sirsa41;
 import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
@@ -69,7 +70,7 @@ public class Resources {
     }
 
     public static void generateKeys() {
-        System.out.println("Generating user asymmetric keys");
+        System.out.println("Generating user asymmetric keys...");
 
         if (!Auth.isLoggedIn()) {
             System.out.println("User not logged in");
@@ -86,6 +87,7 @@ public class Resources {
         final String publicKey = keys[0];
         final String privateKey = keys[1];
 
+        System.out.println("Uploading public key to remote server...");
         HttpResponse<String> response;
         try {
             response = makeRequest(() -> ResourcesRequests.setPublicKey(publicKey));
@@ -141,6 +143,7 @@ public class Resources {
         }
 
         System.out.println(String.format("Creating project: %s", projectName));
+        System.out.println("Generating project symmetric key...");
         String projectKey;
         try {
             projectKey = Encryption.generateProjectKey();
@@ -148,9 +151,11 @@ public class Resources {
             System.out.println("Failed to generate project AES key");
             return;
         }
+        System.out.println("Encrypting project key...");
         String publicKey = Config.getPublicKey();
         String encryptedKey = Encryption.encrypt(projectKey, publicKey);
 
+        System.out.println("Uploading encrypted key to server...");
         HttpResponse<String> response;
         try {
             response = makeRequest(() -> ResourcesRequests.create(projectName, encryptedKey));
@@ -175,7 +180,8 @@ public class Resources {
             } catch (Exception e) {
                 System.out.println("Failed to create project config folder");
             }
-            System.out.println("Project successfuly created");
+            System.out.println("Project successfuly created!");
+            System.out.println("You can now push your files to the remote server");
         } else {
             System.out.println("Failed to create a project");
             System.out.println(response.body());
@@ -196,6 +202,7 @@ public class Resources {
 
         System.out.println(String.format("Cloning project: %s", projectName));
 
+        System.out.println("Retrieving project information from remote server...");
         HttpResponse<String> response;
         try {
             response = makeRequest(() -> ResourcesRequests.clone(projectName));
@@ -242,6 +249,13 @@ public class Resources {
             } catch (Exception e) {
                 System.out.println("Failed to create project config folder");
             }
+
+            System.setProperty("user.dir", Config.projectFolderPath(folderName));
+            final boolean pullResult = pull(null);
+            if (!pullResult) {
+                return;
+            }
+
             System.out.println(String.format("Project %s successfuly cloned", projectName));
         } else {
             System.out.println("Failed to clone project");
@@ -270,34 +284,37 @@ public class Resources {
         final String projectId = Config.getProjectId();
         final String key = Config.getProjectKey();
 
+        System.out.println(String.format("Retrieving %s public key...", userId));
         final String userKey = Resources.getPublicKey(userId);
         if (userKey == null) {
             System.out.println(String.format("Failed to retrieve public key from %s", userId));
             return;
         }
+        System.out.println(String.format("Encrypting project key for %s...", userId));
         final String encryptedKey = Encryption.encrypt(key, userKey);
         if (encryptedKey == null) {
             System.out.println(String.format("Failed to encrypt project key for %s", userId));
             return;
         }
 
+        System.out.println(String.format("Uploading new key to remote server...", userId));
         HttpResponse<String> response;
         try {
             response = makeRequest(() -> ResourcesRequests.share(projectId, userId, encryptedKey));
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Failed to create a project");
+            System.out.println("Failed to share this project");
             return;
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Failed to create a project");
+            System.out.println("Failed to share this project");
             return;
         }
 
         if (response.statusCode() == 200) {
             System.out.println(String.format("Project successfuly shared with %s", userId));
         } else {
-            System.out.println("Failed to create a project");
+            System.out.println("Failed to share this project");
             System.out.println(response.body());
         }
         return;
@@ -420,18 +437,19 @@ public class Resources {
 
     }
 
-    public static void pull() {
+    public static boolean pull(String commitVersion) {
         File compressed = null;
         File encrypted = null;
+        boolean result = false;
         try {
             if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
                 System.out.println("You are not inside a valid project folder");
-                return;
+                return false;
             }
 
             if (!Auth.isLoggedIn()) {
                 System.out.println("You are not logged in. Login first");
-                return;
+                return false;
             }
 
             final String projectId = Config.getProjectId();
@@ -462,35 +480,50 @@ public class Resources {
             compressed.delete();
             final String myVersionHex = Encryption.hashToHex(myVersion);
 
-            System.out.println("Checking local version against remote server...");
-            HttpResponse<String> response;
-            try {
-                response = makeRequest(() -> ResourcesRequests.versions(projectId));
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("Failed to check latest commit version");
-                throw new Exception();
-            }
             String version;
-            if (response.statusCode() == 200) {
-                final String bodyRaw = response.body();
-                final JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
-                final JsonArray history = body.get("history").getAsJsonArray();
-                final JsonObject commit = history.get(0).getAsJsonObject();
-                version = commit.get("version").getAsString();
-                if (version.equals(myVersionHex)) {
-                    System.out.println("You are already on the latest commit");
+            if (commitVersion == null) {
+                System.out.println("Checking local version against remote server...");
+                HttpResponse<String> response;
+                try {
+                    response = makeRequest(() -> ResourcesRequests.versions(projectId));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Failed to check latest commit version");
                     throw new Exception();
                 }
-            } else {
-                System.out.println("Failed to check latest commit version");
-                throw new Exception();
-            }
+                if (response.statusCode() == 200) {
+                    final String bodyRaw = response.body();
+                    final JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
+                    final JsonArray history = body.get("history").getAsJsonArray();
+                    final JsonObject commit = history.get(0).getAsJsonObject();
+                    version = commit.get("version").getAsString();
+                    if (version.equals(myVersionHex)) {
+                        System.out.println("You are already on the latest commit");
+                        throw new Exception();
+                    }
+                } else {
+                    System.out.println("Failed to check latest commit version");
+                    throw new Exception();
+                }
 
-            System.out.println("Pulling latest commit from remote server...");
+                System.out.println("Pulling latest commit from remote server...");
+            } else {
+                if (commitVersion.equals(myVersionHex)) {
+                    System.out.println("You are already on commit " + commitVersion);
+                    throw new Exception();
+                } else {
+                    version = commitVersion;
+                    System.out.println(String.format("Pulling commit %s from remote server...", version));
+                }
+            }
             HttpResponse<byte[]> response2;
             try {
-                response2 = makeRequest2(() -> ResourcesRequests.pull(projectId));
+                if (commitVersion != null) {
+                    final String _version = commitVersion;
+                    response2 = makeRequest2(() -> ResourcesRequests.pull(projectId, _version));
+                } else {
+                    response2 = makeRequest2(() -> ResourcesRequests.pull(projectId, null));
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Failed to pull project files");
@@ -545,9 +578,10 @@ public class Resources {
 
                 System.out.println("Successful pull!");
                 System.out.println(String.format("Commit: %s", version));
+                result = true;
             } else {
                 System.out.println("Failed to pull project files");
-                System.out.println(response2.body());
+                System.out.println(new String(response2.body()));
             }
         } catch (Exception e) {
             // do nothing
@@ -559,7 +593,7 @@ public class Resources {
                 compressed.delete();
             }
         }
-        return;
+        return result;
 
     }
 
@@ -615,7 +649,7 @@ public class Resources {
                 if (myVersion.equals(version)) {
                     indicator = ">";
                 } else {
-                    indicator = "-";
+                    indicator = " ";
                 }
                 System.out.println(String.format("%s %s - %s - %s", indicator, timestamp, user, version));
             }
@@ -656,8 +690,9 @@ public class Resources {
     }
 
     static private File compressProject() {
-        final ArrayList<String> files = FilesUtils.ls(".");
-        final String filepath = ".bag/compress_tmp.tar.gz";
+        final String cwd = System.getProperty("user.dir").toString();
+        final ArrayList<String> files = FilesUtils.ls(cwd);
+        final String filepath = Paths.get(cwd, ".bag/compress_tmp.tar.gz").toString();
         try {
             FilesUtils.compressTarGz(files, filepath);
             return new File(filepath);
