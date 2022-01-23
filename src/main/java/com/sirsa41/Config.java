@@ -75,6 +75,15 @@ public class Config {
         return true;
     }
 
+    public static String getProjectVersion() {
+        final String path = Paths.get(projectConfigFolderPath(null), "version").toString();
+        if (fileExists(path)) {
+            return readFile(path);
+        } else {
+            return null;
+        }
+    }
+
     public static String getProjectId() {
         final String path = Paths.get(projectConfigFolderPath(null), "project_id").toString();
         if (fileExists(path)) {
@@ -102,9 +111,9 @@ public class Config {
         }
     }
 
-    public static void storeProjectHash(String hash, String projectName) {
+    public static void storeProjectVersion(String hash, String projectName) {
         try {
-            writeToFile(hash, Paths.get(projectConfigFolderPath(projectName), "hash").toString());
+            writeToFile(hash, Paths.get(projectConfigFolderPath(projectName), "version").toString());
         } catch (IOException e) {
             e.printStackTrace();
             return;

@@ -48,8 +48,17 @@ public class App {
                 Resources.share(user);
             } else if (command.equals("push")) {
                 Resources.push();
+            } else if (command.equals("history")) {
+                Resources.history();
             } else if (command.equals("pull")) {
-                // Resources.pull();
+                Resources.pull();
+            } else if (command.equals("checkout")) {
+                if (args.length < 2) {
+                    System.out.println("Provide commit version");
+                    return;
+                }
+                final String version = args[1];
+                // Resources.checkout(version);
             } else {
                 System.out.println(String.format("bag %s not implemented", command));
             }
@@ -64,6 +73,9 @@ public class App {
             System.out.println("bag create <project-name> - Create a new project named <project-name>");
             System.out.println("bag clone <project-name> - Clone project named <project-name>");
             System.out.println("bag share <username> - Share project with <username>");
+            System.out.println("bag history - Show project history");
+            System.out.println("bag push - Push current project files to remote server");
+            System.out.println("bag pull - Pull current project files from remote server");
         }
     }
 }

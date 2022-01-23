@@ -105,6 +105,25 @@ public class ResourcesRequests {
                 return response;
         }
 
+        public static HttpResponse<String> pull(String projectId)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("project", projectId);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(HOSTNAME + "/pull"))
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
+
         public static HttpResponse<String> share(String projectId, String userId, String encryptedKey)
                         throws IOException, InterruptedException {
                 JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
@@ -126,7 +145,47 @@ public class ResourcesRequests {
                 return response;
         }
 
-        public static HttpResponse<String> push(String projectId, File encryptedProject, String iv, String signature)
+        public static HttpResponse<String> hasCommit(String projectId, String hash)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("project", projectId);
+                requestJson.addProperty("version", hash);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(HOSTNAME + "/hasCommit"))
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
+
+        public static HttpResponse<String> versions(String projectId)
+                        throws IOException, InterruptedException {
+                JsonObject requestJson = JsonParser.parseString("{}").getAsJsonObject();
+                requestJson.addProperty("project", projectId);
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(HOSTNAME + "/versions"))
+                                .POST(HttpRequest.BodyPublishers.ofString(requestJson.toString()))
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
+
+        public static HttpResponse<String> push(String projectId, File encryptedProject, String iv, String signature,
+                        String version)
                         throws IOException, InterruptedException {
 
                 final String accessToken = Config.getAccessToken();
@@ -136,6 +195,7 @@ public class ResourcesRequests {
                 data.put("project", projectId);
                 data.put("iv", iv);
                 data.put("signature", signature);
+                data.put("version", version);
 
                 // file upload
                 data.put("file", encryptedProject.toPath());

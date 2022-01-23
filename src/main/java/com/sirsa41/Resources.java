@@ -4,7 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
 import com.google.gson.*;
@@ -295,6 +302,203 @@ public class Resources {
     }
 
     public static void push() {
+        File compressed = null;
+        File encrypted = null;
+        try {
+            if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
+                System.out.println("You are not inside a valid project folder");
+                return;
+            }
+
+            if (!Auth.isLoggedIn()) {
+                System.out.println("You are not logged in. Login first");
+                return;
+            }
+
+            if (Config.getPrivateKey() == null) {
+                System.out.println("Generate an asymmetric key pair or set your private key first");
+                return;
+            }
+
+            final String projectId = Config.getProjectId();
+            final String key = Config.getProjectKey();
+
+            compressed = compressProject();
+            if (compressed == null) {
+                System.out.println("Failed to compress project");
+                throw new Exception();
+            }
+
+            String version;
+            try {
+                version = Encryption.hashFile(compressed);
+            } catch (NoSuchAlgorithmException | IOException e1) {
+                System.out.println("Failed to hash project");
+                throw new Exception();
+            }
+            final String versionHex = Encryption.hashToHex(version);
+
+            HttpResponse<String> response;
+            try {
+                response = makeRequest(() -> ResourcesRequests.hasCommit(projectId, versionHex));
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Failed to check latest commit version");
+                throw new Exception();
+            }
+            boolean result;
+            if (response.statusCode() == 200) {
+                result = response.body().equals("true");
+            } else {
+                System.out.println("Failed to check latest commit version");
+                throw new Exception();
+            }
+            if (result) {
+                System.out.println(String.format("Remote server already has commit %s", versionHex));
+                throw new Exception();
+            }
+            Config.storeProjectVersion(versionHex, null);
+
+            final String iv = Encryption.generateIv();
+            encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
+
+            String hash;
+            try {
+                hash = Encryption.hashFile(encrypted);
+            } catch (NoSuchAlgorithmException | IOException e1) {
+                System.out.println("Failed to hash project compressed and encrypted");
+                throw new Exception();
+            }
+
+            final String privateKey = Config.getPrivateKey();
+            final String signature = Encryption.signHash(hash, privateKey);
+
+            try {
+                final File _encrypted = encrypted;
+                response = makeRequest(() -> ResourcesRequests.push(projectId, _encrypted, iv, signature, versionHex));
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Failed to push project files");
+                throw new Exception();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Failed to push project files");
+                throw new Exception();
+            }
+
+            if (response.statusCode() == 200) {
+                final String hashHexServer = response.body();
+                final String hashHex = Encryption.hashToHex(hash);
+                if (!hashHexServer.equals(hashHex)) {
+                    System.out.println("Your local hash differs from the server hash. The server might be compromised");
+                }
+                System.out.println("Successful push");
+                System.out.println(String.format("Commit: %s", versionHex));
+            } else {
+                System.out.println("Failed to push project files");
+                System.out.println(response.body());
+            }
+        } catch (Exception e) {
+            // do nothing
+        } finally {
+            if (encrypted != null) {
+                encrypted.delete();
+            }
+            if (compressed != null) {
+                compressed.delete();
+            }
+        }
+        return;
+
+    }
+
+    public static void pull() {
+        File compressed = null;
+        File encrypted = null;
+        try {
+            if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
+                System.out.println("You are not inside a valid project folder");
+                return;
+            }
+
+            if (!Auth.isLoggedIn()) {
+                System.out.println("You are not logged in. Login first");
+                return;
+            }
+
+            if (Config.getPrivateKey() == null) {
+                System.out.println("Generate an asymmetric key pair or set your private key first");
+                return;
+            }
+
+            final String projectId = Config.getProjectId();
+            if (projectId == null) {
+                System.out.println("Invalid project_id");
+                throw new Exception();
+            }
+            final String key = Config.getProjectKey();
+            if (key == null) {
+                System.out.println("Invalid project key");
+                throw new Exception();
+            }
+            final String myVersion = Config.getProjectVersion();
+
+            HttpResponse<String> response;
+            try {
+                response = makeRequest(() -> ResourcesRequests.versions(projectId));
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Failed to check latest commit version");
+                throw new Exception();
+            }
+            if (response.statusCode() == 200) {
+                final String bodyRaw = response.body();
+                final JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
+                final JsonArray history = body.get("history").getAsJsonArray();
+                final JsonObject commit = history.get(0).getAsJsonObject();
+                final String version = commit.get("version").getAsString();
+                if (version.equals(myVersion)) {
+                    System.out.println("You are already on the latest commit");
+                    throw new Exception();
+                }
+            } else {
+                System.out.println("Failed to check latest commit version");
+                throw new Exception();
+            }
+
+            try {
+                response = makeRequest(() -> ResourcesRequests.pull(projectId));
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Failed to push project files");
+                throw new Exception();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Failed to push project files");
+                throw new Exception();
+            }
+
+            if (response.statusCode() == 200) {
+                // todo
+            } else {
+                System.out.println("Failed to push project files");
+                System.out.println(response.body());
+            }
+        } catch (Exception e) {
+            // do nothing
+        } finally {
+            if (encrypted != null) {
+                encrypted.delete();
+            }
+            if (compressed != null) {
+                compressed.delete();
+            }
+        }
+        return;
+
+    }
+
+    public static void history() {
         if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
             System.out.println("You are not inside a valid project folder");
             return;
@@ -311,56 +515,57 @@ public class Resources {
         }
 
         final String projectId = Config.getProjectId();
-        final String key = Config.getProjectKey();
-
-        final File compressed = compressProject();
-        if (compressed == null) {
-            System.out.println("Failed to compress project");
-            return;
+        String myVersion = Config.getProjectVersion();
+        if (myVersion == null) {
+            myVersion = "";
         }
-        final String iv = Encryption.generateIv();
-        final File encrypted = Encryption.encryptFile(compressed.getAbsolutePath(), key, iv);
-
-        String hash;
-        try {
-            hash = Encryption.hashFile(encrypted);
-        } catch (NoSuchAlgorithmException | IOException e1) {
-            System.out.println("Failed to hash project");
-            return;
-        }
-        String hashHex = Encryption.hashToHex(hash);
-        Config.storeProjectHash(hashHex, null);
-
-        final String privateKey = Config.getPrivateKey();
-        final String signature = Encryption.signHash(hash, privateKey);
 
         HttpResponse<String> response;
         try {
-            response = makeRequest(() -> ResourcesRequests.push(projectId, encrypted, iv, signature));
+            response = makeRequest(() -> ResourcesRequests.versions(projectId));
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Failed to push project files");
+            System.out.println("Failed to retrieve project history");
             return;
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Failed to push project files");
+            System.out.println("Failed to retrieve project history");
             return;
         }
 
         if (response.statusCode() == 200) {
-            encrypted.delete();
-            compressed.delete();
-            final String commit = response.body();
-            if (!commit.equals(hashHex)) {
-                System.out.println("Your local hash differs from the server hash. The server might be compromised");
+            final String bodyRaw = response.body();
+            JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
+            JsonArray history = body.get("history").getAsJsonArray();
+            JsonObject commit;
+            String timestamp;
+            String user;
+            String version;
+            String indicator;
+            for (int i = 0; i < history.size(); i++) {
+                commit = history.get(i).getAsJsonObject();
+                version = commit.get("version").getAsString();
+                user = commit.get("user").getAsString();
+                timestamp = parseSecondsSinceEpoch(commit.get("timestamp").getAsString());
+                if (myVersion.equals(version)) {
+                    indicator = ">";
+                } else {
+                    indicator = "-";
+                }
+                System.out.println(String.format("%s %s - %s - %s", indicator, timestamp, user, version));
             }
-            System.out.println("Successful push");
-            System.out.println(String.format("Commit: %s", commit));
         } else {
-            System.out.println("Failed to push project files");
+            System.out.println("Failed to retrieve project history");
             System.out.println(response.body());
         }
         return;
+    }
+
+    static private String parseSecondsSinceEpoch(String timestamp) {
+        long seconds = Integer.parseInt(timestamp) * 1;
+        LocalDateTime dateTime = LocalDateTime.ofEpochSecond(seconds, 0, ZoneOffset.UTC);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm", Locale.ENGLISH);
+        return dateTime.format(formatter);
     }
 
     private static HttpResponse<String> makeRequest(Callable<HttpResponse<String>> request) throws Exception {
