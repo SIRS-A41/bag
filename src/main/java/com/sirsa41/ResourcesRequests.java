@@ -182,6 +182,23 @@ public class ResourcesRequests {
                 return response;
         }
 
+        public static HttpResponse<String> projects()
+                        throws IOException, InterruptedException {
+
+                final String accessToken = Config.getAccessToken();
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(HOSTNAME + "/projects"))
+                                .GET()
+                                .setHeader("User-Agent", "Java 11 HttpClient Bag")
+                                .setHeader("Authorization", "Bearer " + accessToken)
+                                .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                return response;
+        }
+
         public static HttpResponse<String> push(String projectId, File encryptedProject, String iv, String signature,
                         String version)
                         throws IOException, InterruptedException {

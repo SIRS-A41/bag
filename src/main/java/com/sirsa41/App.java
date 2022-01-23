@@ -48,6 +48,8 @@ public class App {
                 Resources.share(user);
             } else if (command.equals("push")) {
                 Resources.push();
+            } else if (command.equals("projects")) {
+                Resources.projects();
             } else if (command.equals("history")) {
                 Resources.history();
             } else if (command.equals("pull")) {

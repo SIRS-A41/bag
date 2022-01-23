@@ -601,6 +601,49 @@ public class Resources {
 
     }
 
+    public static void projects() {
+
+        if (!Auth.isLoggedIn()) {
+            System.out.println("You are not logged in. Login first");
+            return;
+        }
+
+        HttpResponse<String> response;
+        try {
+            response = makeRequest(() -> ResourcesRequests.projects());
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to retrieve projects list");
+            return;
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Failed to retrieve projects list");
+            return;
+        }
+
+        if (response.statusCode() == 200) {
+            final String bodyRaw = response.body();
+            JsonObject body = new Gson().fromJson(bodyRaw, JsonObject.class);
+            JsonArray projects = body.get("projects").getAsJsonArray();
+            JsonObject project;
+            String createdAt;
+            String name;
+            String sharedWith;
+            System.out.println("Date\t\t\tName\tShared");
+            for (int i = 0; i < projects.size(); i++) {
+                project = projects.get(i).getAsJsonObject();
+                name = project.get("name").getAsString();
+                sharedWith = project.get("shared").getAsString();
+                createdAt = parseSecondsSinceEpoch(project.get("created_at").getAsString());
+                System.out.println(String.format("%s\t%s\t%s", createdAt, name, sharedWith));
+            }
+        } else {
+            System.out.println("Failed to retrieve projects list");
+            System.out.println(response.body());
+        }
+        return;
+    }
+
     public static void history() {
         if (!Config.projectConfigFolderExists(null) || !Config.validProjectConfig()) {
             System.out.println("You are not inside a valid project folder");
@@ -645,6 +688,7 @@ public class Resources {
             String user;
             String version;
             String indicator;
+            System.out.println("  Date\t\t\tUser\tCommit");
             for (int i = 0; i < history.size(); i++) {
                 commit = history.get(i).getAsJsonObject();
                 version = commit.get("version").getAsString();
@@ -655,7 +699,7 @@ public class Resources {
                 } else {
                     indicator = " ";
                 }
-                System.out.println(String.format("%s %s \t %s \t %s", indicator, timestamp, user, version));
+                System.out.println(String.format("%s %s\t%s\t%s", indicator, timestamp, user, version));
             }
         } else {
             System.out.println("Failed to retrieve project history");
