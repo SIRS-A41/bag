@@ -32,7 +32,6 @@ public class ResourcesRequests {
         private static String HOSTNAME = "https://192.168.0.254:8443/resources";
 
         private static final HttpClient httpClient = HttpClient.newBuilder()
-                        .version(HttpClient.Version.HTTP_1_1)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
