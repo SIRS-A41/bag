@@ -19,12 +19,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
 import com.google.gson.*;
 
 public class ResourcesRequests {
@@ -32,17 +26,9 @@ public class ResourcesRequests {
         private static String HOSTNAME = "https://192.168.0.254:8443/resources";
 
         private static final HttpClient httpClient = HttpClient.newBuilder()
+                        .version(HttpClient.Version.HTTP_2)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
-
-        private static HttpClient getHttpClient() throws NoSuchAlgorithmException {
-                return HttpClient.newBuilder()
-                                .connectTimeout(Duration.ofSeconds(10))
-                                .sslContext(SSLContext.getDefault())
-                                .version(Version.HTTP_2)
-                                .sslParameters(new SSLParameters())
-                                .build();
-        }
 
         public static HttpResponse<String> create(String projectName, String encryptedKey)
                         throws IOException, InterruptedException {
