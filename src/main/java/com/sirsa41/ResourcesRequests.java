@@ -5,27 +5,45 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.*;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import com.google.gson.*;
 
 public class ResourcesRequests {
 
-        private static String HOSTNAME = "http://localhost:8001/resources";
+        private static String HOSTNAME = "https://192.168.1.112:8444/resources";
 
         private static final HttpClient httpClient = HttpClient.newBuilder()
                         .version(HttpClient.Version.HTTP_1_1)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
+
+        private static HttpClient getHttpClient() throws NoSuchAlgorithmException {
+                return HttpClient.newBuilder()
+                                .connectTimeout(Duration.ofSeconds(10))
+                                .sslContext(SSLContext.getDefault())
+                                .version(Version.HTTP_2)
+                                .sslParameters(new SSLParameters())
+                                .build();
+        }
 
         public static HttpResponse<String> create(String projectName, String encryptedKey)
                         throws IOException, InterruptedException {
@@ -183,7 +201,7 @@ public class ResourcesRequests {
         }
 
         public static HttpResponse<String> projects()
-                        throws IOException, InterruptedException {
+                        throws IOException, InterruptedException, NoSuchAlgorithmException {
 
                 final String accessToken = Config.getAccessToken();
 

@@ -8,11 +8,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -133,6 +136,10 @@ class FilesUtils {
         }
     }
 
+    static public String cwd() {
+        return System.getProperty("user.dir").toString();
+    }
+
     static public ArrayList<String> ls(String path) {
         File directoryPath = new File(path);
         // List of all files and directories
@@ -145,5 +152,26 @@ class FilesUtils {
             }
         }
         return filteredList;
+    }
+
+    static private ArrayList<String> getFileNames(ArrayList<String> fileNames, Path dir) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path path : stream) {
+                if (path.toFile().isDirectory()) {
+                    getFileNames(fileNames, path);
+                } else {
+                    fileNames.add(path.toAbsolutePath().toString());
+                    System.out.println(path.getFileName());
+                }
+            }
+        } catch (IOException e) {
+            // do nothing
+        }
+        return fileNames;
+    }
+
+    static public ArrayList<String> lsRecursive(String dir) {
+        final ArrayList<String> filenames = new ArrayList<String>();
+        return getFileNames(filenames, Paths.get(dir));
     }
 }

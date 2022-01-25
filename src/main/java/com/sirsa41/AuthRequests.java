@@ -9,7 +9,7 @@ import com.google.gson.*;
 
 public class AuthRequests {
 
-        private static String HOSTNAME = "http://localhost:8000/auth";
+        private static String HOSTNAME = "https://192.168.1.112:8443/auth";
         private static String AUTHORIZATION = "Basic QzZFNTlCMjlBRDZEODRCMEU0RUJGQjAzNkRFNzVFMUQ6VjJaMnBBdEZhYUQ3THRVaHRHYkJOQTUraUtDajFmdysybSttNlhVaDdUWT0=";
 
         private static final HttpClient httpClient = HttpClient.newBuilder()

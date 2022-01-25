@@ -6,6 +6,9 @@ package com.sirsa41;
  */
 public class App {
     public static void main(String[] args) {
+        System.setProperty("javax.net.ssl.trustStore", "certificates/sirsa41.jks");
+        System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+
         if (args.length >= 1) {
             final String command = args[0];
             if (command.equals("register")) {

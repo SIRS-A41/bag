@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -25,6 +27,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
 
 import javax.crypto.BadPaddingException;
@@ -372,6 +375,42 @@ public class Encryption {
         }
         return Base64.getEncoder().encodeToString(digest.digest());
 
+    }
+
+    static public String hashProject() throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        final ArrayList<String> files = FilesUtils.ls(FilesUtils.cwd());
+        int n;
+        byte[] buffer;
+        for (String filepath : files) {
+            if (Files.isDirectory(Paths.get(filepath))) {
+                ArrayList<String> dirFiles = FilesUtils.lsRecursive(filepath);
+                for (String dirFilepath : dirFiles) {
+                    try (InputStream fis = new FileInputStream(dirFilepath)) {
+                        n = 0;
+                        buffer = new byte[8192];
+                        while (n != -1) {
+                            n = fis.read(buffer);
+                            if (n > 0) {
+                                digest.update(buffer, 0, n);
+                            }
+                        }
+                    }
+                }
+            } else {
+                try (InputStream fis = new FileInputStream(filepath)) {
+                    n = 0;
+                    buffer = new byte[8192];
+                    while (n != -1) {
+                        n = fis.read(buffer);
+                        if (n > 0) {
+                            digest.update(buffer, 0, n);
+                        }
+                    }
+                }
+            }
+        }
+        return Base64.getEncoder().encodeToString(digest.digest());
     }
 
     static public Boolean validateSignatureBytes(byte[] inputBytes, String signature, String publicKey) {

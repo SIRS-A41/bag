@@ -342,16 +342,9 @@ public class Resources {
             final String projectId = Config.getProjectId();
             final String key = Config.getProjectKey();
 
-            System.out.println("Compressing project files...");
-            compressed = compressProject();
-            if (compressed == null) {
-                System.out.println("Failed to compress project");
-                throw new Exception();
-            }
-
             String version;
             try {
-                version = Encryption.hashFile(compressed);
+                version = Encryption.hashProject();
             } catch (NoSuchAlgorithmException | IOException e1) {
                 System.out.println("Failed to hash project");
                 throw new Exception();
@@ -376,6 +369,13 @@ public class Resources {
             }
             if (result) {
                 System.out.println(String.format("Remote server already has commit %s", versionHex));
+                throw new Exception();
+            }
+
+            System.out.println("Compressing project files...");
+            compressed = compressProject();
+            if (compressed == null) {
+                System.out.println("Failed to compress project");
                 throw new Exception();
             }
 
@@ -463,21 +463,13 @@ public class Resources {
                 throw new Exception();
             }
 
-            compressed = compressProject();
-            if (compressed == null) {
-                System.out.println("Failed to compress project");
-                throw new Exception();
-            }
-
             String myVersion;
             try {
-                myVersion = Encryption.hashFile(compressed);
+                myVersion = Encryption.hashProject();
             } catch (NoSuchAlgorithmException | IOException e1) {
-                compressed.delete();
                 System.out.println("Failed to hash project");
                 throw new Exception();
             }
-            compressed.delete();
             final String myVersionHex = Encryption.hashToHex(myVersion);
 
             String version;
@@ -735,7 +727,7 @@ public class Resources {
 
     static private File compressProject() {
         final String cwd = System.getProperty("user.dir").toString();
-        final ArrayList<String> files = FilesUtils.ls(cwd);
+        final ArrayList<String> files = FilesUtils.ls(FilesUtils.cwd());
         final String filepath = Paths.get(cwd, ".bag/compress_tmp.tar.gz").toString();
         try {
             FilesUtils.compressTarGz(files, filepath);
