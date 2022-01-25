@@ -13,6 +13,7 @@ public class AuthRequests {
         private static String AUTHORIZATION = "Basic QzZFNTlCMjlBRDZEODRCMEU0RUJGQjAzNkRFNzVFMUQ6VjJaMnBBdEZhYUQ3THRVaHRHYkJOQTUraUtDajFmdysybSttNlhVaDdUWT0=";
 
         private static final HttpClient httpClient = HttpClient.newBuilder()
+                        .version(HttpClient.Version.HTTP_2)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
