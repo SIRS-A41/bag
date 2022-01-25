@@ -1,6 +1,8 @@
 com/sirsa41/Auth.class
 com/sirsa41/Config.class
 com/sirsa41/ResourcesRequests.class
+com/sirsa41/App.class
 com/sirsa41/Encryption.class
 com/sirsa41/AuthRequests.class
 com/sirsa41/Resources.class
+com/sirsa41/FilesUtils.class
