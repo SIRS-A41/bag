@@ -526,7 +526,7 @@ public class Resources {
                 throw new Exception();
             }
 
-            if (response2.statusCode() == 200) {
+            if (response2.statusCode() == 206) {
                 final String signature = response2.headers().firstValue("x-signature").get();
                 final String user = response2.headers().firstValue("x-user").get();
                 final String iv = response2.headers().firstValue("x-iv").get();
