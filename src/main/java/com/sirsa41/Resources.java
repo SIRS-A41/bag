@@ -391,6 +391,7 @@ public class Resources {
                 System.out.println("Failed to hash project compressed and encrypted");
                 throw new Exception();
             }
+            final String hashHex = Encryption.hashToHex(hash);
 
             final String privateKey = Config.getPrivateKey();
             final String signature = Encryption.signHash(hash, privateKey);
@@ -411,7 +412,6 @@ public class Resources {
 
             if (response.statusCode() == 200) {
                 final String hashHexServer = response.body();
-                final String hashHex = Encryption.hashToHex(hash);
                 if (!hashHexServer.equals(hashHex)) {
                     System.out.println(
                             "Your local hash differs from the hash the server received. The server might be compromised");

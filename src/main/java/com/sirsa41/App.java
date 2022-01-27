@@ -79,6 +79,9 @@ public class App {
             System.out.println("bag history - Show project history");
             System.out.println("bag push - Push current project files to remote server");
             System.out.println("bag pull - Pull current project files from remote server");
+            System.out
+                    .println("bag checkout <commit-version> - Pull <commit-version> project files from remote server");
+            System.out.println("bag projects - Show user's projects");
         }
     }
 }
