@@ -441,17 +441,30 @@ public class Resources {
                 System.out.println("Failed to hash project compressed and encrypted");
                 throw new Exception();
             }
-            final String hashHex = Encryption.hashToHex(hash);
+            String doubleHash;
+            try {
+                doubleHash = Encryption.hashString(hash);
+            } catch (NoSuchAlgorithmException | IOException e1) {
+                System.out.println("Failed to hash project compressed and encrypted");
+                throw new Exception();
+            }
+            final String hashHex = Encryption.hashToHex(doubleHash);
 
             // sign the encrypted file hash using the user's private key
             final String privateKey = Config.getPrivateKey();
-            final String signature = Encryption.signHash(hash, privateKey);
+            final String signatureServer = Encryption.signHash(doubleHash, privateKey);
+            final String signatureProject = Encryption.signHash(hash, privateKey);
+
+            // generate random IV
+            final String iv2 = Encryption.generateIv();
+            final String mac = Encryption.encryptString(signatureProject, key, iv2);
 
             // push the files to the remote server
             System.out.println("Pushing project files to remote server..");
             try {
                 final File _encrypted = encrypted;
-                response = makeRequest(() -> ResourcesRequests.push(projectId, _encrypted, iv, signature, versionHex));
+                response = makeRequest(
+                        () -> ResourcesRequests.push(projectId, _encrypted, iv, mac, iv2, signatureServer, versionHex));
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Failed to push project files");
@@ -596,10 +609,18 @@ public class Resources {
             }
 
             if (response2.statusCode() == 206) {
-                // get the signature, author, and iv of the commit received
-                final String signature = response2.headers().firstValue("x-signature").get();
+                // get the mac, author, and iv of the commit received
+                final String mac = response2.headers().firstValue("x-signature").get();
+                final String macIv = response2.headers().firstValue("x-mac-iv").get();
                 final String user = response2.headers().firstValue("x-user").get();
                 final String iv = response2.headers().firstValue("x-iv").get();
+
+                // decrypt the signature received
+                final String signature = Encryption.decryptString(mac, key, macIv);
+                if (signature == null) {
+                    System.out.println("The commit signature is not valid. Aborting!");
+                    throw new Exception();
+                }
 
                 // get the author's public key
                 final String publicKey = getPublicKey(user);
@@ -815,4 +836,9 @@ public class Resources {
         return null;
     }
 
+    public static void main(String[] args) throws NoSuchAlgorithmException, IOException {
+        final String e = Encryption.hashBytes("test123".getBytes());
+        System.out.println(Encryption.signHash(e, Config.getPrivateKey()));
+        System.out.println(Encryption.signHash(Encryption.hashBytes(e.getBytes()), Config.getPrivateKey()));
+    }
 }

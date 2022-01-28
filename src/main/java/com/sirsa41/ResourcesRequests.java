@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.*;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpClient.Version;
 import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
@@ -203,7 +201,8 @@ public class ResourcesRequests {
                 return response;
         }
 
-        public static HttpResponse<String> push(String projectId, File encryptedProject, String iv, String signature,
+        public static HttpResponse<String> push(String projectId, File encryptedProject, String iv, String mac,
+                        String iv2, String signature,
                         String version)
                         throws IOException, InterruptedException {
 
@@ -213,6 +212,8 @@ public class ResourcesRequests {
                 // fields
                 data.put("project", projectId);
                 data.put("iv", iv);
+                data.put("mac", mac);
+                data.put("mac-iv", iv2);
                 data.put("signature", signature);
                 data.put("version", version);
 

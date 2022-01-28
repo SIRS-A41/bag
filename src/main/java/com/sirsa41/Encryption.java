@@ -219,10 +219,54 @@ public class Encryption {
         return processFile(Cipher.ENCRYPT_MODE, filepath, key, _iv);
     }
 
+    static public String encryptString(String plaintext, String key, String iv) {
+        IvParameterSpec _iv = loadIv(iv);
+        return processString(Cipher.ENCRYPT_MODE, plaintext, key, _iv);
+    }
+
+    static public String decryptString(String encryptedString, String key, String iv) {
+        IvParameterSpec _iv = loadIv(iv);
+        return processString(Cipher.DECRYPT_MODE, encryptedString, key, _iv);
+    }
+
     // decrypt file
     static public File decryptFile(String filepath, String key, String iv) {
         IvParameterSpec _iv = loadIv(iv);
         return processFile(Cipher.DECRYPT_MODE, filepath, key, _iv);
+    }
+
+    static private String processString(int ciphermode, String plaintext, String key, IvParameterSpec iv) {
+        Key secretKey;
+        try {
+            secretKey = stringToKey(key);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e1) {
+            System.out.println("Failed to load key");
+            return null;
+        }
+        // use AES/CBC/PKCS5Padding
+        Cipher cipher;
+        try {
+            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            e.printStackTrace();
+            return null;
+        }
+        // load IV and select cipher mode
+        try {
+            cipher.init(ciphermode, secretKey, iv);
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        byte[] outputBytes;
+        try {
+            // encrypt or decrypt loaded bytes
+            outputBytes = cipher.doFinal(Base64.getDecoder().decode(plaintext));
+        } catch (Exception e) {
+            return null;
+        }
+        return Base64.getEncoder().encodeToString(outputBytes);
     }
 
     // encrypt or decrypt file using specified key and iv
@@ -401,6 +445,12 @@ public class Encryption {
         }
         return Base64.getEncoder().encodeToString(digest.digest());
 
+    }
+
+    static public String hashString(String string) throws IOException, NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        digest.update(Base64.getDecoder().decode(string));
+        return Base64.getEncoder().encodeToString(digest.digest());
     }
 
     // hash all files inside a project
