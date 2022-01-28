@@ -1,12 +1,9 @@
 package com.sirsa41;
 
-/**
- * Hello world!
- *
- */
 public class App {
     public static void main(String[] args) {
 
+        // parse arguments
         if (args.length >= 1) {
             final String command = args[0];
             if (command.equals("register")) {
@@ -61,11 +58,13 @@ public class App {
                     return;
                 }
                 final String version = args[1];
+                // checkout uses the pull method, but provides a specific commit version
                 Resources.pull(version);
             } else {
                 System.out.println(String.format("bag %s not implemented", command));
             }
         } else {
+            // if no argument is provided, instructions are displayed
             System.out.println("Instructions:");
             System.out.println("bag register - Create an account");
             System.out.println("bag login - Login to account");

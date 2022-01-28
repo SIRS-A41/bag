@@ -23,8 +23,10 @@ import com.google.gson.*;
 
 public class ResourcesRequests {
 
+        // the IP of the Reverse Proxy machine
         private static String HOSTNAME = "https://192.168.0.254:8443/resources";
 
+        // client_id and client_secret used for the Auth API encoded using Base64
         private static final HttpClient httpClient = HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();

@@ -14,8 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -28,7 +26,7 @@ import org.apache.commons.compress.utils.IOUtils;
 class FilesUtils {
     private static final int BUFFER_SIZE = 1024;
 
-    // tar.gz few files
+    // Compress all files in paths to a .tar.gz file
     public static void compressTarGz(ArrayList<String> paths, String outputPath)
             throws IOException {
 
@@ -55,6 +53,7 @@ class FilesUtils {
 
     }
 
+    // add file to .tar.gz
     static private void addFileToTarGz(TarArchiveOutputStream tOut, String path, String base)
             throws IOException {
         File f = new File(path);
@@ -76,6 +75,7 @@ class FilesUtils {
         }
     }
 
+    // write bytes to file
     static public Path writeFile(String path, byte[] bytes) {
         try {
             return Files.write(Paths.get(path), bytes);
@@ -85,6 +85,7 @@ class FilesUtils {
         }
     }
 
+    // decompress a .tar.gz file
     static public File decompressTarGz(String tarGz, String targetDir) throws IOException {
         Files.createDirectories(Paths.get(targetDir));
         try (InputStream fi = Files.newInputStream(Paths.get(tarGz));
@@ -115,6 +116,8 @@ class FilesUtils {
                             dest.write(data, 0, count);
                         }
                         final File file = new File(newPath);
+                        // IMPORTANT: set the last modified date to the last modified date in the
+                        // .tar.gz file
                         file.setLastModified(entry.getLastModifiedDate().getTime());
                     }
                 }
@@ -123,6 +126,7 @@ class FilesUtils {
         }
     }
 
+    // move all files from one directory to another
     static public void moveFiles(String sourcePath, String destPath) {
         ArrayList<String> filepaths = ls(sourcePath);
         for (String filepath : filepaths) {
@@ -136,10 +140,12 @@ class FilesUtils {
         }
     }
 
+    // get the cwd
     static public String cwd() {
         return System.getProperty("user.dir").toString();
     }
 
+    // list all files in one directory excluding the .bag project config folder
     static public ArrayList<String> ls(String path) {
         File directoryPath = new File(path);
         // List of all files and directories
@@ -154,6 +160,7 @@ class FilesUtils {
         return filteredList;
     }
 
+    // get all files (recursively) from a directory
     static private ArrayList<String> getFileNames(ArrayList<String> fileNames, Path dir) {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path path : stream) {
@@ -170,6 +177,7 @@ class FilesUtils {
         return fileNames;
     }
 
+    // list all files (recursively) from a directory
     static public ArrayList<String> lsRecursive(String dir) {
         final ArrayList<String> filenames = new ArrayList<String>();
         return getFileNames(filenames, Paths.get(dir));

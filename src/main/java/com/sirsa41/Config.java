@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Config {
+    // paths for local config files
     private static final String CONFIG_PATH = System.getProperty("user.home") + "/.config/bag/";
     private static final String ACCESS_TOKEN_PATH = CONFIG_PATH + "access_token";
     private static final String REFRESH_TOKEN_PATH = CONFIG_PATH + "refresh_token";
@@ -19,10 +20,12 @@ public class Config {
     private static final String PUBLIC_KEY_PATH = CONFIG_PATH + "public_key";
     private static final String PRIVATE_KEY_PATH = CONFIG_PATH + "private_key";
 
+    // create the ~/.config/bag folder
     private static void createConfigFolder() throws Exception {
         createFolder(CONFIG_PATH);
     }
 
+    // create a named project folder
     public static Boolean createProjectFolder(String name) throws Exception {
         if (!projectFolderExists(name)) {
             createFolder(projectFolderPath(name));
@@ -31,14 +34,17 @@ public class Config {
         return false;
     }
 
+    // create project config folder, e.g., ~/Documents/project/.bag
     public static void createProjectConfigFolder(String projectName) throws Exception {
         if (!projectConfigFolderExists(projectName)) {
             createFolder(projectConfigFolderPath(projectName));
         }
     }
 
+    // get the project folder path
     public static String projectFolderPath(String name) {
         final String cwd = System.getProperty("user.dir").toString();
+        // if no name was provided, use the cwd
         if (name == null) {
             return cwd;
         } else {
@@ -46,6 +52,7 @@ public class Config {
         }
     }
 
+    // get the project config folder path, e.g., ~/Documents/project/.bag
     public static String projectConfigFolderPath(String projectName) {
         if (projectName != null) {
             final String path = Paths.get(projectFolderPath(projectName), ".bag").toString();
@@ -56,6 +63,7 @@ public class Config {
         }
     }
 
+    // delete all the project files
     public static void deleteProjectFiles() {
         final String path = projectFolderPath(null);
         ArrayList<String> files = FilesUtils.ls(path);
@@ -68,16 +76,19 @@ public class Config {
         }
     }
 
+    // check if project folder exists
     public static Boolean projectFolderExists(String name) {
         final File f = new File(projectFolderPath(name));
         return f.exists();
     }
 
+    // check if project has config folder
     public static Boolean projectConfigFolderExists(String name) {
         final File f = new File(projectConfigFolderPath(name));
         return f.exists();
     }
 
+    // check if the project config folder has a key and a project_id
     public static Boolean validProjectConfig() {
         File f = new File(Paths.get(projectConfigFolderPath(null), "key").toString());
         if (!f.exists())
@@ -90,6 +101,7 @@ public class Config {
         return true;
     }
 
+    // get the stored version of the current project files
     public static String getProjectVersion() {
         final String path = Paths.get(projectConfigFolderPath(null), "version").toString();
         if (fileExists(path)) {
@@ -99,6 +111,7 @@ public class Config {
         }
     }
 
+    // get the project id from the project config folder
     public static String getProjectId() {
         final String path = Paths.get(projectConfigFolderPath(null), "project_id").toString();
         if (fileExists(path)) {
@@ -108,6 +121,7 @@ public class Config {
         }
     }
 
+    // get the project secret key from the project config folder
     public static String getProjectKey() {
         final String path = Paths.get(projectConfigFolderPath(null), "key").toString();
         if (fileExists(path)) {
@@ -135,6 +149,7 @@ public class Config {
         }
     }
 
+    // change the current working directory
     public static Boolean setCurrentDirectory(String directory_name) {
         Boolean result = false; // Boolean indicating whether directory was set
         File directory; // Desired current working directory
@@ -165,6 +180,7 @@ public class Config {
         }
     }
 
+    // write string to file
     private static void writeToFile(String str, String filepath) throws IOException {
         File file = new File(filepath);
         file.createNewFile();
@@ -173,6 +189,7 @@ public class Config {
         writer.close();
     }
 
+    // save access token to config folder
     public static void setAccessToken(String accessToken) throws Exception {
         if (!fileExists(CONFIG_PATH)) {
             createConfigFolder();
@@ -180,6 +197,7 @@ public class Config {
         writeToFile(accessToken, ACCESS_TOKEN_PATH);
     }
 
+    // save refresh token to config folder
     public static void setRefreshToken(String refreshToken) throws Exception {
         if (!fileExists(CONFIG_PATH)) {
             createConfigFolder();
@@ -234,6 +252,7 @@ public class Config {
         }
     }
 
+    // delete a directory folder
     private static void deleteDir(File file) {
         File[] contents = file.listFiles();
         if (contents != null) {
@@ -246,6 +265,7 @@ public class Config {
         file.delete();
     }
 
+    // empty a directory
     private static void emptyDir(String filepath) {
         final File file = new File(filepath);
         File[] contents = file.listFiles();
@@ -258,6 +278,8 @@ public class Config {
         }
     }
 
+    // import private key from another file
+    // used to move the private key to a different machine
     public static void setPrivateKeyFromFile(String filepath) {
         try {
             Files.copy(Paths.get(filepath), Paths.get(PRIVATE_KEY_PATH), StandardCopyOption.REPLACE_EXISTING);

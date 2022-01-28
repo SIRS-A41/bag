@@ -43,9 +43,11 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class Encryption {
 
+    // generate asymmetric key pair
     public static String[] generateAsymmetricKeys() {
         KeyPairGenerator kpg;
         try {
+            // RSA 2048 was used
             kpg = KeyPairGenerator.getInstance("RSA");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -55,6 +57,7 @@ public class Encryption {
         kpg.initialize(2048);
         final KeyPair keys = kpg.generateKeyPair();
 
+        // parse the generate keys to strings
         final String publickey = keyToString(keys.getPublic());
         final String privateKey = keyToString(keys.getPrivate());
 
@@ -63,19 +66,22 @@ public class Encryption {
     }
 
     public static String generateProjectKey() throws NoSuchAlgorithmException {
-
+        // use AES 256
         KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
         keyGenerator.init(256);
         SecretKey key = keyGenerator.generateKey();
         byte[] encodedKey = key.getEncoded();
+        // save key using base 64
         return Base64.getEncoder().encodeToString(encodedKey);
     }
 
+    // parse Key to base 64 encoded string
     private static String keyToString(Key key) {
         byte[] encodedPublicKey = key.getEncoded();
         return Base64.getEncoder().encodeToString(encodedPublicKey);
     }
 
+    // load private key from base64 string
     private static PrivateKey stringToPrivateKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] encoded = Base64.getDecoder().decode(key);
         PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(encoded);
@@ -84,6 +90,7 @@ public class Encryption {
         return priv;
     }
 
+    // load public key from base64 string
     private static PublicKey stringToPublicKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] encoded = Base64.getDecoder().decode(key);
         X509EncodedKeySpec pubSpec = new X509EncodedKeySpec(encoded);
@@ -92,11 +99,13 @@ public class Encryption {
         return pub;
     }
 
+    // load AES key from base64 string
     private static Key stringToKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] encoded = Base64.getDecoder().decode(key);
         return (new SecretKeySpec(encoded, 0, 16, "AES"));
     }
 
+    // decrypt string using personal private key (stored locally)
     public static String decrypt(String encryptedText) {
         final String key = Config.getPrivateKey();
         PrivateKey privateKey;
@@ -141,6 +150,7 @@ public class Encryption {
         }
     }
 
+    // encrypt string using provided public key
     public static String encrypt(String plaintext, String key) {
         PublicKey publicKey;
         try {
@@ -190,6 +200,7 @@ public class Encryption {
         }
     }
 
+    // generate secure random iv
     static public String generateIv() {
         byte[] iv = new byte[16];
         new SecureRandom().nextBytes(iv);
@@ -202,16 +213,19 @@ public class Encryption {
         return new IvParameterSpec(encoded);
     }
 
+    // encrypt file
     static public File encryptFile(String filepath, String key, String iv) {
         IvParameterSpec _iv = loadIv(iv);
         return processFile(Cipher.ENCRYPT_MODE, filepath, key, _iv);
     }
 
+    // decrypt file
     static public File decryptFile(String filepath, String key, String iv) {
         IvParameterSpec _iv = loadIv(iv);
         return processFile(Cipher.DECRYPT_MODE, filepath, key, _iv);
     }
 
+    // encrypt or decrypt file using specified key and iv
     static private File processFile(int ciphermode, String filepath, String key, IvParameterSpec iv) {
         final File inputFile = new File(filepath);
         Key secretKey;
@@ -221,6 +235,7 @@ public class Encryption {
             System.out.println("Failed to load key");
             return null;
         }
+        // use AES/CBC/PKCS5Padding
         Cipher cipher;
         try {
             cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
@@ -228,6 +243,7 @@ public class Encryption {
             e.printStackTrace();
             return null;
         }
+        // load IV and select cipher mode
         try {
             cipher.init(ciphermode, secretKey, iv);
         } catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
@@ -242,6 +258,7 @@ public class Encryption {
             e.printStackTrace();
             return null;
         }
+        // read file bytes
         byte[] inputBytes = new byte[(int) inputFile.length()];
         try {
             inputStream.read(inputBytes);
@@ -253,6 +270,7 @@ public class Encryption {
 
         byte[] outputBytes;
         try {
+            // encrypt or decrypt loaded bytes
             outputBytes = cipher.doFinal(inputBytes);
         } catch (IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
@@ -270,6 +288,8 @@ public class Encryption {
             }
 
         }
+
+        // write output of cipher.doFinal to a new file
         FileOutputStream outputStream;
         try {
             outputStream = new FileOutputStream(newPath);
@@ -290,6 +310,7 @@ public class Encryption {
 
     }
 
+    // derive enhanced password using KDF
     static public String deriveKey(String password, String salt, int keyLen)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
@@ -299,6 +320,8 @@ public class Encryption {
         return Base64.getEncoder().encodeToString(encoded);
     }
 
+    // sign a string - used to sign the hash of files
+    // uses private key stored locally
     static public String signHash(String hash, String privateKey) {
         PrivateKey key;
         try {
@@ -343,6 +366,7 @@ public class Encryption {
 
     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
+    // convert base64 string to hex string
     static public String hashToHex(String hash) {
         byte[] bytes = Base64.getDecoder().decode(hash);
         char[] hexChars = new char[bytes.length * 2];
@@ -354,12 +378,14 @@ public class Encryption {
         return new String(hexChars);
     }
 
+    // hash bytes using SHA256
     static public String hashBytes(byte[] bytes) throws IOException, NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         digest.update(bytes);
         return Base64.getEncoder().encodeToString(digest.digest());
     }
 
+    // hash file using SHA256
     static public String hashFile(File file) throws IOException, NoSuchAlgorithmException {
 
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -377,11 +403,14 @@ public class Encryption {
 
     }
 
+    // hash all files inside a project
+    // used to obtain the commit version
     static public String hashProject() throws IOException, NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         final ArrayList<String> files = FilesUtils.ls(FilesUtils.cwd());
         int n;
         byte[] buffer;
+        // iterate through every project file
         for (String filepath : files) {
             if (Files.isDirectory(Paths.get(filepath))) {
                 ArrayList<String> dirFiles = FilesUtils.lsRecursive(filepath);
@@ -410,9 +439,11 @@ public class Encryption {
                 }
             }
         }
+        // obtain the final hash
         return Base64.getEncoder().encodeToString(digest.digest());
     }
 
+    // validate signature
     static public Boolean validateSignatureBytes(byte[] inputBytes, String signature, String publicKey) {
         PublicKey key;
         try {
@@ -454,6 +485,9 @@ public class Encryption {
         }
     }
 
+    // validate the signature
+    // the user provides the computed hash, the signature, and the public key of
+    // the signer
     static public Boolean validateSignature(String hash, String signature, String publicKey) {
         PublicKey key;
         try {
@@ -494,11 +528,5 @@ public class Encryption {
             e.printStackTrace();
             return null;
         }
-    }
-
-    public static void main(String[] args) {
-        decryptFile("/home/robot/Documents/SIRS-A41/resources-api/compress_tmp.tar.gz.encrypted",
-                "lSGXHee0o2dLqC7G6TWNDarmpq3P0pOyQRyvYZcHL9c=",
-                "FtAI/JTcm1UyYwPZd1enGw==");
     }
 }

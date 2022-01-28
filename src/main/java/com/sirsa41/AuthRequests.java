@@ -9,10 +9,14 @@ import com.google.gson.*;
 
 public class AuthRequests {
 
+        // the IP of the Reverse Proxy machine
         private static String HOSTNAME = "https://192.168.0.254:8443/auth";
+
+        // client_id and client_secret used for the Auth API encoded using Base64
         private static String AUTHORIZATION = "Basic QzZFNTlCMjlBRDZEODRCMEU0RUJGQjAzNkRFNzVFMUQ6VjJaMnBBdEZhYUQ3THRVaHRHYkJOQTUraUtDajFmdysybSttNlhVaDdUWT0=";
 
         private static final HttpClient httpClient = HttpClient.newBuilder()
+                        // add a timeout of 10 seconds (can be adjusted)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
